@@ -1,0 +1,10 @@
+{
+  "name": "workspace-fixture",
+  "private": true,
+  "packageManager": "npm@11.5.2",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*"
+  ]
+}

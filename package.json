@@ -1,0 +1,49 @@
+{
+  "name": "dsh-backend-team",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "prebuild": "node scripts/assert-node24.mjs",
+    "build": "node scripts/build-workspaces.mjs",
+    "pretest": "node scripts/assert-node24.mjs",
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "pretypecheck": "node scripts/assert-node24.mjs",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "prelint": "node scripts/assert-node24.mjs",
+    "lint": "eslint .",
+    "prepack:bundle": "node scripts/assert-node24.mjs",
+    "pack:bundle": "npm pack --workspaces --if-present",
+    "verify:web-client": "node scripts/verify-web-client.mjs",
+    "verify:agent-runtime": "node scripts/verify-agent-runtime.mjs",
+    "verify:long-task-runtime": "node scripts/verify-long-task-runtime.mjs",
+    "verify:real-qwen-team-slice": "node scripts/verify-real-qwen-team-slice.mjs",
+    "verify:real-qwen-delegation": "node scripts/verify-real-qwen-delegation.mjs",
+    "verify:dsh-production-ports": "node scripts/verify-dsh-production-ports.mjs",
+    "verify:postgresql-execution-port": "node scripts/verify-postgresql-execution-port.mjs",
+    "audit:release-materials": "node scripts/audit-release-materials.mjs"
+  },
+  "dependencies": {
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.3",
+    "@types/node": "24.13.3",
+    "@types/react": "^18.3.31",
+    "@vitest/coverage-v8": "4.1.11",
+    "eslint": "10.9.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tailwindcss": "^4.3.3",
+    "tsup": "8.5.1",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.68.0",
+    "vitest": "4.1.11"
+  }
+}

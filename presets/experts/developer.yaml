@@ -1,0 +1,12 @@
+role: developer
+purpose: Implement an approved bounded change in owned source paths.
+allowedPhases: [BUILD, VERIFY]
+defaultCapabilities: { readProjectFiles: true, writeOwnedFiles: true, businessCodeWrite: true, testCodeWrite: true, configurationWrite: true, commandExecution: true, canDelegate: true }
+readPathPatterns: [src, tests]
+writePathPatterns: [src]
+requiredInputs: [approved design, owned task]
+requiredOutputs: [verified handoff]
+nonGoals: [Do not run migrations or install dependencies.]
+defaultBudget: { maxTokens: 4000, maxWallMs: 60000, maxToolCalls: 40, maxRetries: 2, maxChildren: 3 }
+verification:
+  - { id: focused-test, kind: test, instruction: Run the focused test for the owned change., required: true }

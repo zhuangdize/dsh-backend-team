@@ -1,0 +1,10 @@
+{
+  "exactVersion": "24.19.0",
+  "architecture": "darwin-arm64",
+  "url": "https://nodejs.org/dist/v24.19.0/node-v24.19.0-darwin-arm64.tar.gz",
+  "sha256": "8294b7aa9b03997481c06babf1e8b270c859358f27da57a11509afe537ac381d",
+  "bytes": 52234372,
+  "license": "MIT",
+  "source": "nodejs.org",
+  "status": "supported"
+}

@@ -1,0 +1,13 @@
+{
+  "name": "express-prisma-mysql-fixture",
+  "private": true,
+  "engines": {
+    "node": "20.20.0"
+  },
+  "dependencies": {
+    "@prisma/client": "6.14.0",
+    "express": "5.1.0",
+    "mysql2": "3.14.3",
+    "prisma": "6.14.0"
+  }
+}

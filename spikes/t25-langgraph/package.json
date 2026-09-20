@@ -1,0 +1,23 @@
+{
+  "name": "@dsh-backend-team/t25-langgraph-spike",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "verify:postgres": "tsx test/postgres-kernel.test.ts"
+  },
+  "dependencies": {
+    "@langchain/core": "1.1.48",
+    "@langchain/langgraph": "1.4.15",
+    "@langchain/langgraph-checkpoint-postgres": "1.0.5",
+    "pg": "8.16.3",
+    "tsx": "4.20.6",
+    "typescript": "6.0.3",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.3",
+    "@types/pg": "8.15.5"
+  }
+}

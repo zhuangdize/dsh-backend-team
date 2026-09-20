@@ -1,0 +1,14 @@
+{
+  "name": "nest-drizzle-postgres-fixture",
+  "private": true,
+  "engines": {
+    "node": "24.19.0"
+  },
+  "dependencies": {
+    "@nestjs/core": "11.1.12",
+    "@nestjs/platform-fastify": "11.1.12",
+    "drizzle-orm": "0.44.7",
+    "fastify": "5.5.0",
+    "pg": "8.16.3"
+  }
+}

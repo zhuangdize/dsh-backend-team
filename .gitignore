@@ -1,0 +1,15 @@
+.worktrees/
+.superpowers/
+
+# Local Agent Team runtime state, sessions, caches, logs, and credentials.
+# Never add this directory to a release or source repository.
+.backend-team/
+
+node_modules/
+dist/
+/packages/bundle/lib/
+coverage/
+
+# Generated release archives and sidecars; publish source separately.
+*.tgz
+*.tgz.*

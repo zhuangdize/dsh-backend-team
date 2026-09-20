@@ -1,0 +1,16 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "../..",
+    "outDir": "lib",
+    "declaration": true,
+    "declarationMap": false,
+    "sourceMap": false,
+    "ignoreDeprecations": "6.0",
+    "baseUrl": "../..",
+    "paths": {
+      "@dsh-backend-team/harness-adapter": ["packages/harness-adapter/src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts"]
+}

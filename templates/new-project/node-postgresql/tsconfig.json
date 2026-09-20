@@ -1,0 +1,1 @@
+{"compilerOptions":{"module":"NodeNext","moduleResolution":"NodeNext","target":"ES2023","strict":true,"esModuleInterop":true,"emitDecoratorMetadata":true,"experimentalDecorators":true,"skipLibCheck":true,"types":["node"],"outDir":"dist"},"include":["src","drizzle.config.ts"]}

@@ -1,0 +1,116 @@
+openapi: 3.1.0
+info:
+  title: Greeting Demo API
+  version: 0.2.0
+  description: >-
+    演示用只读问候接口，由 src/greeting-demo/server.mjs 启动的独立进程提供
+    （http.createServer 绑定 127.0.0.1，port 默认 0 由 OS 分配）。
+    仅使用 Node.js 原生 http，无第三方依赖，无数据存储，无副作用。
+    仓库中既有的健康检查接口不由本契约描述，也不受本功能影响（AC-008）。
+servers:
+  - url: http://127.0.0.1:{port}/
+    description: >-
+      本地演示监听。port 默认 0（由操作系统分配临时端口），
+      实际端口在服务启动输出中给出，因此以变量模板表示。
+    variables:
+      port:
+        default: "0"
+        description: 监听端口；0 表示临时端口
+security: []
+tags:
+  - name: greeting
+    description: 问候演示
+paths:
+  /greeting:
+    get:
+      tags:
+        - greeting
+      operationId: getGreeting
+      summary: 返回问候语
+      description: >-
+        读取 name 查询参数：URL 解码（UTF-8）后去除首尾空白；结果为空字符串、
+        参数缺省或参数值为空时按「访客」处理（AC-002~AC-004）。中间空白原样保留
+        （AC-005）。同名参数重复出现时取第一个值（AC-007）。无鉴权、无副作用。
+      security: []
+      parameters:
+        - name: name
+          in: query
+          required: false
+          description: >-
+            问候对象名称。示例：小明（编码形式 %E5%B0%8F%E6%98%8E）。
+            仅首个同名参数生效；服务端只做 trim，不做长度或白名单校验。
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 问候成功（含按「访客」处理的缺省与空白输入场景）。
+          headers:
+            Content-Type:
+              description: 固定为 application/json，并声明 charset=utf-8。
+              schema:
+                type: string
+                const: "application/json; charset=utf-8"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GreetingResponse"
+              examples:
+                named:
+                  summary: 带 name（AC-001）
+                  value:
+                    message: 你好，小明
+                noParam:
+                  summary: 无 name 参数（AC-002）
+                  value:
+                    message: 你好，访客
+                emptyParam:
+                  summary: name 为空值（AC-003）
+                  value:
+                    message: 你好，访客
+                blankParam:
+                  summary: name 仅含空白字符（AC-004）
+                  value:
+                    message: 你好，访客
+                trimmed:
+                  summary: name 首尾含空白（AC-005）
+                  value:
+                    message: 你好，小明
+                firstOfRepeated:
+                  summary: 重复 name 取第一个（AC-007）
+                  value:
+                    message: 你好，张三
+        "404":
+          description: >-
+            路径不是 /greeting，或以非 GET 方法访问 /greeting（已确认：
+            本接口不返回 405，也不定义 Allow 头）。
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                notFound:
+                  value:
+                    message: 接口不存在
+components:
+  schemas:
+    GreetingResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: 固定文案「你好，<对象>」，对象为 trim 后的 name 或「访客」。
+          examples:
+            - 你好，小明
+            - 你好，访客
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: 错误提示；不回显任何用户输入。

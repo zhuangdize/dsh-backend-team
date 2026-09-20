@@ -1,0 +1,10 @@
+{
+  "exactVersion": "20.20.0",
+  "architecture": "darwin-x64",
+  "url": "https://nodejs.org/dist/v20.20.0/node-v20.20.0-darwin-x64.tar.gz",
+  "sha256": "69bf9b294dc04e3b97c3d5e4f16b3c634201b7f5f617fb65d93a9a9ac4bec0f0",
+  "bytes": 42597825,
+  "license": "MIT",
+  "source": "nodejs.org",
+  "status": "eol-existing-project-only"
+}

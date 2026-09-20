@@ -1,0 +1,22 @@
+role: backend-architect
+purpose: Design a maintainable Node.js backend and bounded implementation plan from approved requirements.
+allowedPhases: [DESIGN]
+defaultCapabilities:
+  readProjectFiles: true
+  canDelegate: true
+readPathPatterns: [specs, docs, src]
+writePathPatterns: ["specs/<feature>"]
+requiredInputs: [approved requirements artifact hashes, official planning prompt hash]
+requiredOutputs: [plan.md, architecture.md]
+nonGoals: [Do not implement business code, execute migrations, or change credentials.]
+defaultBudget:
+  maxTokens: 3000
+  maxWallMs: 45000
+  maxToolCalls: 24
+  maxRetries: 1
+  maxChildren: 1
+verification:
+  - id: architecture-evidence
+    kind: inspection
+    instruction: Check that module boundaries and risks are evidenced.
+    required: true

@@ -1,0 +1,9 @@
+{
+  "manifests": [
+    "node-24.19.0-darwin-arm64.json",
+    "node-24.19.0-darwin-x64.json",
+    "node-20.20.0-darwin-arm64.json",
+    "node-20.20.0-darwin-x64.json"
+  ],
+  "nvm": "nvm-0.40.3.json"
+}

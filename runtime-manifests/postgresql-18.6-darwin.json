@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "component": "postgresql",
+  "version": "18.6",
+  "status": "pending-native-build",
+  "sourceManifest": "postgresql-source-18.6.json",
+  "artifacts": []
+}

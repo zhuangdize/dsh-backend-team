@@ -1,0 +1,523 @@
+openapi: 3.1.0
+info:
+  title: 客户管理 API（Customer Management）
+  version: "1.0.0"
+  description: |
+    客户主数据维护契约：新增、查询（关键词 + 分页 + 总数）、查看详情、修改（仅更新提交字段，乐观并发）、变更历史读取。
+    对齐 spec.md 的 AC-001–AC-010；字段清单、判重键与修改权限口径按 clarification.md 已定稿结论（Q1–Q3）执行。
+    认证复用现有系统登录态与人员目录，本模块不提供登录、注册或令牌签发端点。
+    手机号与邮箱为个人敏感信息：允许业务人员读取客户档案明文，但不出现在日志与变更历史前值中（历史仅存脱敏值）。
+  contact:
+    name: Backend Agent Team
+servers:
+  - url: /
+    description: 与现有业务系统同源部署，路径前缀 /api/v1
+security:
+  - sessionToken: []
+  - upstreamSessionCookie: []
+tags:
+  - name: customers
+    description: 客户档案的增、查、改
+  - name: customer-changes
+    description: 客户变更历史（审计留痕）
+paths:
+  /api/v1/customers:
+    post:
+      tags: [customers]
+      operationId: createCustomer
+      summary: 新增客户
+      description: |
+        校验通过后创建客户并返回服务端生成的唯一编号；编号不可由客户端指定（AC-001）。
+        必填缺失或电话/邮箱格式非法返回 422 与字段级错误（AC-002）。
+        电话已被占用返回 409 并回传已存在客户摘要，不产生新记录（AC-003）。
+        失败一律整体回滚，不留半完成记录。
+      x-required-permission: customer:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerCreateRequest"
+      responses:
+        "201":
+          description: 创建成功
+          headers:
+            Location:
+              description: 新客户详情地址
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerDetail"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          $ref: "#/components/responses/PhoneTaken"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "503":
+          $ref: "#/components/responses/DependencyUnavailable"
+    get:
+      tags: [customers]
+      operationId: searchCustomers
+      summary: 按关键词分页查询客户
+      description: |
+        关键词匹配名称、联系人或电话（AC-004）；无命中返回空列表且状态为 200，不返回全量数据。
+        分页使用 page/pageSize，固定排序键 (updatedAt desc, customerId asc) 保证翻页不重不漏（AC-005）。
+      x-required-permission: customer:read
+      parameters:
+        - $ref: "#/components/parameters/KeywordQuery"
+        - $ref: "#/components/parameters/PageQuery"
+        - $ref: "#/components/parameters/PageSizeQuery"
+      responses:
+        "200":
+          description: 查询成功
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerPage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "503":
+          $ref: "#/components/responses/DependencyUnavailable"
+  /api/v1/customers/{customerId}:
+    parameters:
+      - $ref: "#/components/parameters/CustomerIdPath"
+    get:
+      tags: [customers]
+      operationId: getCustomer
+      summary: 查看客户详情与最近变更
+      description: |
+        返回完整档案与最近变更（脱敏值），响应携带 ETag（= version）用于后续修改（AC-007、AC-009）。
+        编号不存在返回 404；已认证但无权限返回 403，且不泄露该编号是否存在。
+      x-required-permission: customer:read
+      responses:
+        "200":
+          description: 详情
+          headers:
+            ETag:
+              description: 当前数据版本，用于 If-Match
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerDetail"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/DependencyUnavailable"
+    patch:
+      tags: [customers]
+      operationId: updateCustomer
+      summary: 修改客户信息（仅更新提交字段）
+      description: |
+        局部更新：未提交的字段保持原值；customer_id、createdAt、createdBy 只读（AC-006）。
+        必须携带 If-Match（取自 GET 的 ETag/version）。他人已先修改导致版本不匹配时返回 409
+        CUSTOMER_VERSION_CONFLICT，本次保存被拒绝且原值不被静默覆盖（AC-008）。
+        改后的电话若被其他客户占用同样返回 409 CUSTOMER_PHONE_TAKEN（电话唯一性规则）。
+      x-required-permission: customer:write
+      parameters:
+        - $ref: "#/components/parameters/IfMatchHeader"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerUpdateRequest"
+      responses:
+        "200":
+          description: 修改成功，返回最新值与新版本
+          headers:
+            ETag:
+              description: 变更后的版本
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerDetail"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: 版本冲突或电话唯一性冲突
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConflictPayload"
+        "412":
+          description: If-Match 缺失或格式非法
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "503":
+          $ref: "#/components/responses/DependencyUnavailable"
+  /api/v1/customers/{customerId}/changes:
+    parameters:
+      - $ref: "#/components/parameters/CustomerIdPath"
+    get:
+      tags: [customer-changes]
+      operationId: listCustomerChanges
+      summary: 分页读取客户变更历史
+      description: |
+        按变更时间倒序返回每次成功的修改：变更人、变更时间、被改字段与前后值（敏感字段脱敏）（AC-009）。
+      x-required-permission: customer:read
+      parameters:
+        - $ref: "#/components/parameters/PageQuery"
+        - $ref: "#/components/parameters/PageSizeQuery"
+      responses:
+        "200":
+          description: 变更历史
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerChangePage"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthenticated"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "503":
+          $ref: "#/components/responses/DependencyUnavailable"
+components:
+  securitySchemes:
+    sessionToken:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque-or-jwt
+      description: |
+        由现有系统登录后签发的会话令牌，本模块仅验证并解析 Principal（userId、团队、角色），不负责签发与刷新。
+        缺失或无效返回 401；已认证但权限不足返回 403（AC-010）。
+    upstreamSessionCookie:
+      type: apiKey
+      in: cookie
+      name: <upstream-session-cookie-name>
+      description: |
+        同源部署时沿用现有系统会话 Cookie。Cookie 名称以上线环境的既有配置为准（待实现阶段确认，不在本契约中虚构）。
+  parameters:
+    CustomerIdPath:
+      name: customerId
+      in: path
+      required: true
+      description: 系统生成的客户编号，创建后不可变更
+      schema:
+        type: string
+        pattern: ^[A-Z]{2,4}-[0-9A-Za-z-]{6,32}$
+    IfMatchHeader:
+      name: If-Match
+      in: header
+      required: true
+      description: |
+        取自 GET 响应的 ETag/version，用于乐观并发控制（AC-008）。
+        校验规则：值去除首尾双引号后必须是十进制数字（服务端先剥离 ETag 引号再比较，缺失或格式非法返回 412）。
+      schema:
+        type: string
+    KeywordQuery:
+      name: keyword
+      in: query
+      required: false
+      description: 匹配名称、联系人或电话；省略或为空表示浏览全部（仍分页）
+      schema:
+        type: string
+        maxLength: 100
+    PageQuery:
+      name: page
+      in: query
+      required: false
+      description: 页码，从 1 开始
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSizeQuery:
+      name: pageSize
+      in: query
+      required: false
+      description: 每页条数，超出范围返回 400
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+  schemas:
+    PersonRef:
+      type: object
+      description: 人员目录引用，用于展示操作人
+      required: [userId, displayName]
+      properties:
+        userId:
+          type: string
+        displayName:
+          type: string
+    CustomerSummary:
+      type: object
+      required: [customerId, name, phone, updatedAt]
+      properties:
+        customerId:
+          type: string
+          description: 服务端生成的唯一编号
+        name:
+          type: string
+        contactPerson:
+          type: ["string", "null"]
+        phone:
+          type: string
+        company:
+          type: ["string", "null"]
+        updatedAt:
+          type: string
+          format: date-time
+    CustomerDetail:
+      allOf:
+        - $ref: "#/components/schemas/CustomerSummary"
+        - type: object
+          required: [version, createdAt, updatedAt]
+          properties:
+            email:
+              type: ["string", "null"]
+              format: email
+            note:
+              type: ["string", "null"]
+              maxLength: 1000
+            version:
+              type: integer
+              description: 乐观锁版本号，与 ETag 等价
+              minimum: 1
+            createdBy:
+              $ref: "#/components/schemas/PersonRef"
+            updatedBy:
+              $ref: "#/components/schemas/PersonRef"
+            createdAt:
+              type: string
+              format: date-time
+            recentChanges:
+              type: array
+              description: 最近若干条变更（脱敏值）
+              items:
+                $ref: "#/components/schemas/CustomerChange"
+    CustomerCreateRequest:
+      type: object
+      additionalProperties: false
+      description: |
+        Q1 已定稿的最小字段集合：必填 name、phone；可选 contactPerson、email、company、note。
+        additionalProperties 为 false，清单外字段一律拒绝（不静默写入），见 spec.md Rules 与 clarification.md。
+      required: [name, phone]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: 去除首尾空格后不可为空
+        contactPerson:
+          type: ["string", "null"]
+          maxLength: 50
+        phone:
+          type: string
+          description: 判重前先去除空格、括号、加号与连字符，归一化后系统内唯一
+          pattern: ^[0-9()+ -]{6,20}$
+        email:
+          type: ["string", "null"]
+          format: email
+          maxLength: 100
+        company:
+          type: ["string", "null"]
+          maxLength: 100
+        note:
+          type: ["string", "null"]
+          maxLength: 1000
+    CustomerUpdateRequest:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      description: 仅提交的字段会被更新；不接受 customerId、createdAt、createdBy、version
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        contactPerson:
+          type: ["string", "null"]
+          maxLength: 50
+        phone:
+          type: string
+          pattern: ^[0-9()+ -]{6,20}$
+        email:
+          type: ["string", "null"]
+          format: email
+          maxLength: 100
+        company:
+          type: ["string", "null"]
+          maxLength: 100
+        note:
+          type: ["string", "null"]
+          maxLength: 1000
+    CustomerPage:
+      type: object
+      required: [items, page, pageSize, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomerSummary"
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+        total:
+          type: integer
+          minimum: 0
+          description: 匹配总数（AC-004）
+    CustomerChange:
+      type: object
+      required: [field, changedAt, changedBy]
+      properties:
+        field:
+          type: string
+          enum: [name, contactPerson, phone, email, company, note]
+        oldValue:
+          type: ["string", "null"]
+          description: 修改前值；敏感字段（phone/email）为脱敏形态或“该字段已被修改”
+        newValue:
+          type: ["string", "null"]
+          description: 修改后值；敏感字段为脱敏形态
+        changedBy:
+          $ref: "#/components/schemas/PersonRef"
+        changedAt:
+          type: string
+          format: date-time
+        requestId:
+          type: ["string", "null"]
+          description: 用于与日志关联排查
+    CustomerChangePage:
+      type: object
+      required: [items, page, pageSize, total]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CustomerChange"
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+    FieldError:
+      type: object
+      required: [field, code, message]
+      properties:
+        field:
+          type: string
+          description: 出错字段名，供前端逐项提示（AC-002）
+        code:
+          type: string
+          enum: [REQUIRED, TOO_LONG, INVALID_FORMAT, DUPLICATED, IMMUTABLE]
+        message:
+          type: string
+    Error:
+      type: object
+      required: [code, message, requestId]
+      properties:
+        code:
+          type: string
+          description: 机器可读错误码，见 ConflictPayload
+        message:
+          type: string
+          description: 面向使用者的中文提示
+        requestId:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+    ConflictPayload:
+      allOf:
+        - $ref: "#/components/schemas/Error"
+        - type: object
+          properties:
+            code:
+              type: string
+              enum:
+                - CUSTOMER_PHONE_TAKEN
+                - CUSTOMER_VERSION_CONFLICT
+              description: |
+                CUSTOMER_PHONE_TAKEN：电话已被占用（AC-003），details.existingCustomer 给出已存在客户摘要；
+                CUSTOMER_VERSION_CONFLICT：他人已修改，需刷新后重试（AC-008）。
+  responses:
+    BadRequest:
+      description: 请求语法或参数不合法
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthenticated:
+      description: 未登录或会话失效
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: 权限不足；不泄露目标数据是否存在（AC-010）
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: 客户编号不存在（AC-007）
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    PhoneTaken:
+      description: 联系电话已被占用（AC-003）
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ConflictPayload"
+    ValidationError:
+      description: 字段级校验失败（AC-002）
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/Error"
+              - type: object
+                required: [fieldErrors]
+                properties:
+                  fieldErrors:
+                    type: array
+                    minItems: 1
+                    items:
+                      $ref: "#/components/schemas/FieldError"
+    DependencyUnavailable:
+      description: 依赖（数据库或人员目录）不可用，按拒绝处理，数据未变更
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"

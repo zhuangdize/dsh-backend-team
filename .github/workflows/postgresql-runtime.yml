@@ -1,0 +1,73 @@
+name: PostgreSQL runtime
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'runtime-manifests/postgresql-source-18.6.json'
+      - 'scripts/build-postgresql-runtime.sh'
+      - 'scripts/verify-postgresql-runtime.mjs'
+      - 'scripts/verify-postgresql-execution-port.mjs'
+      - 'packages/database/**'
+      - 'packages/contracts/**'
+      - 'scripts/build-workspaces.mjs'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/postgresql-runtime.yml'
+permissions:
+  contents: read
+jobs:
+  build:
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            architecture: arm64
+          - runner: macos-15-intel
+            architecture: x64
+    runs-on: ${{ matrix.runner }}
+    env:
+      EXPECTED_ARCHITECTURE: ${{ matrix.architecture }}
+      ARTIFACT_NAME: postgresql-18.6-darwin-${{ matrix.architecture }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+          cache: npm
+      - name: Verify native runner identity
+        run: node -e 'if (process.platform !== "darwin" || process.arch !== process.env.EXPECTED_ARCHITECTURE) process.exit(1)'
+      - run: npm ci --ignore-scripts
+      - run: npm run build
+      - run: bash scripts/build-postgresql-runtime.sh
+      - name: Verify native database lifecycle and preserve evidence
+        run: |
+          mkdir -p "$RUNNER_TEMP/postgresql-evidence"
+          node scripts/verify-postgresql-execution-port.mjs > "$RUNNER_TEMP/postgresql-evidence/smoke.json"
+          cp ".backend-team/artifacts/$ARTIFACT_NAME.tar.xz" "$RUNNER_TEMP/postgresql-evidence/"
+          cp runtime-manifests/postgresql-source-18.6.json "$RUNNER_TEMP/postgresql-evidence/"
+          cd "$RUNNER_TEMP/postgresql-evidence"
+          shasum -a 256 "$ARTIFACT_NAME.tar.xz" smoke.json postgresql-source-18.6.json > SHA256SUMS
+      - name: Attest verified runtime and evidence
+        id: provenance
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            ${{ runner.temp }}/postgresql-evidence/${{ env.ARTIFACT_NAME }}.tar.xz
+            ${{ runner.temp }}/postgresql-evidence/smoke.json
+            ${{ runner.temp }}/postgresql-evidence/postgresql-source-18.6.json
+      - name: Preserve signed attestation
+        env:
+          ATTESTATION_BUNDLE: ${{ steps.provenance.outputs.bundle-path }}
+        run: cp "$ATTESTATION_BUNDLE" "$RUNNER_TEMP/postgresql-evidence/attestation.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ runner.temp }}/postgresql-evidence/
+          if-no-files-found: error
+          retention-days: 30

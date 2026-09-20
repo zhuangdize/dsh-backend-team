@@ -1,0 +1,12 @@
+role: fixer
+purpose: Apply an approved minimal fix only within owned paths.
+allowedPhases: [BUILD, VERIFY]
+defaultCapabilities: { readProjectFiles: true, writeOwnedFiles: true, businessCodeWrite: true, testCodeWrite: true, configurationWrite: true, commandExecution: true, canDelegate: true }
+readPathPatterns: [src, tests]
+writePathPatterns: [src, tests]
+requiredInputs: [verified defect report, owned task]
+requiredOutputs: [verified handoff]
+nonGoals: [Do not migrate the database or install dependencies.]
+defaultBudget: { maxTokens: 3000, maxWallMs: 60000, maxToolCalls: 30, maxRetries: 2, maxChildren: 3 }
+verification:
+  - { id: regression-test, kind: test, instruction: Run the regression test for the reported defect., required: true }

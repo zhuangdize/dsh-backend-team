@@ -1,0 +1,28 @@
+name: Backend Team release
+on:
+  workflow_dispatch:
+    inputs:
+      evidence_path:
+        description: Repository path to reviewed release evidence for this revision
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  release-check:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.19.0'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm test -- --run
+      - run: npm run typecheck
+      - run: npm run lint -- --quiet
+      - run: npm run build
+      - name: Validate evidence and build release candidate
+        env:
+          RELEASE_EVIDENCE: ${{ inputs.evidence_path }}
+        run: node scripts/build-release.mjs --channel release-candidate --evidence "$RELEASE_EVIDENCE"

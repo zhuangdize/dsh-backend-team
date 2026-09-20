@@ -1,0 +1,661 @@
+openapi: 3.1.0
+info:
+  title: 人员管理 API（Personnel Management）
+  version: 1.0.0
+  description: >-
+    人员主档案管理契约：建档、在册查询、在职变更、调岗（任职区间）、状态流转（停用）、
+    字段级历史与受限删除。仅 HR 管理员可访问（spec Q2 / AC-008）；字段范围仅覆盖基础与
+    雇佣信息，不含证件号、薪酬、银行账户（Q4 / AC-009）。服务端强制授权：集合与写操作对
+    非 HR 返回 403，人员维度资源对非 HR 返回 404，与不存在不可区分。
+servers:
+  - url: /api/personnel
+    description: 人员模块资源前缀（宿主包与挂载点实施前确认，见 plan.md 前置确认 1）
+security:
+  - SessionCookie: []
+  - BearerToken: []
+tags:
+  - name: persons
+  - name: assignments
+  - name: lifecycle
+  - name: history
+paths:
+  /persons:
+    get:
+      tags: [persons]
+      operationId: listPersons
+      summary: F2 查询在册人员（默认在册视图 + 条件筛选 + 分页）
+      parameters:
+        - $ref: '#/components/parameters/NameFilter'
+        - $ref: '#/components/parameters/EmployeeNoFilter'
+        - $ref: '#/components/parameters/DepartmentFilter'
+        - $ref: '#/components/parameters/StatusFilter'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: 人员摘要列表与分页信息
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, page, pageSize, total]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PersonSummary'
+                  page:
+                    type: integer
+                    minimum: 1
+                  pageSize:
+                    type: integer
+                    minimum: 1
+                  total:
+                    type: integer
+                    minimum: 0
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+    post:
+      tags: [persons]
+      operationId: createPerson
+      summary: F1 建档（入职）
+      description: 录入必填信息、组织与岗位、生效日期；成功后人员进入 在职（R2）。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonCreateRequest'
+      responses:
+        '201':
+          description: 档案已创建并进入在职状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /persons/{personId}:
+    get:
+      tags: [persons]
+      operationId: getPerson
+      summary: F2 查看人员详情（含当前组织与岗位）
+      parameters:
+        - $ref: '#/components/parameters/PersonId'
+      responses:
+        '200':
+          description: 人员详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [persons]
+      operationId: updatePerson
+      summary: F3 在职变更（仅基础与雇佣信息字段）
+      description: 每次变更按字段记录前后值、操作人与时间（R7 / AC-010）。
+      parameters:
+        - $ref: '#/components/parameters/PersonId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonUpdateRequest'
+      responses:
+        '200':
+          description: 变更已保存
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      tags: [persons]
+      operationId: deletePerson
+      summary: 彻底删除（仅在无任何业务引用且已获授权时允许，R2 / AC-007）
+      parameters:
+        - $ref: '#/components/parameters/PersonId'
+      responses:
+        '204':
+          description: 档案已删除
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /persons/{personId}/assignments:
+    post:
+      tags: [assignments]
+      operationId: createAssignment
+      summary: F1/F3 指定或变更组织、岗位与汇报关系（按生效日期生效）
+      description: >-
+        新任职区间开始后，旧值关闭并进入任职历史（AC-004）。同一人员区间不得重叠（AC-005），
+        汇报上级须为在职人员且不得形成环路（R4）。
+      parameters:
+        - $ref: '#/components/parameters/PersonId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignmentCreateRequest'
+      responses:
+        '201':
+          description: 任职变更已登记
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Assignment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /persons/{personId}/assignments/{assignmentId}/retract:
+    post:
+      tags: [assignments]
+      operationId: retractAssignment
+      summary: R3 撤销尚未生效的任职变更
+      parameters:
+        - $ref: '#/components/parameters/PersonId'
+        - name: assignmentId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 变更已撤销
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Assignment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /persons/{personId}/status-transitions:
+    post:
+      tags: [lifecycle]
+      operationId: createStatusTransition
+      summary: F4 状态流转（在职/停用）
+      description: 仅允许 草稿 → 在职 → 停用（R2）。停用需原因与生效日期；档案与历史保留。
+      parameters:
+        - $ref: '#/components/parameters/PersonId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StatusTransitionRequest'
+      responses:
+        '200':
+          description: 状态已按生效日期流转
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonDetail'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /persons/{personId}/history:
+    get:
+      tags: [history]
+      operationId: listPersonHistory
+      summary: F5 字段级历史与审计追溯（AC-010）
+      parameters:
+        - $ref: '#/components/parameters/PersonId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: 按时间倒序的变更记录（含任职生效期间）
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, page, pageSize, total]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ChangeRecord'
+                  page:
+                    type: integer
+                    minimum: 1
+                  pageSize:
+                    type: integer
+                    minimum: 1
+                  total:
+                    type: integer
+                    minimum: 0
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  securitySchemes:
+    SessionCookie:
+      type: apiKey
+      in: cookie
+      name: dsh_session
+      description: 复用宿主既有会话认证；HR 管理员角色在服务端校验（不新增独立登录体系）。
+    BearerToken:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+      description: 宿主使用令牌会话时的等价认证方式；实际启用哪种在实施前确认。
+  parameters:
+    PersonId:
+      name: personId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    NameFilter:
+      name: name
+      in: query
+      required: false
+      schema:
+        type: string
+        maxLength: 64
+    EmployeeNoFilter:
+      name: employeeNo
+      in: query
+      required: false
+      schema:
+        type: string
+        maxLength: 32
+    DepartmentFilter:
+      name: departmentId
+      in: query
+      required: false
+      schema:
+        type: string
+        maxLength: 64
+    StatusFilter:
+      name: status
+      in: query
+      required: false
+      description: 省略时为默认在册视图（在职）。停用人员仅在显式请求时出现（AC-006）。
+      schema:
+        $ref: '#/components/schemas/PersonStatus'
+    Page:
+      name: page
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSize:
+      name: pageSize
+      in: query
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 200
+        default: 20
+  responses:
+    BadRequest:
+      description: 输入校验失败，返回可理解的中文提示与具体缺失/非法字段（R6 / AC-001）
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: 未认证
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Forbidden:
+      description: 已认证但非 HR 管理员；不返回任何人员数据（AC-008）
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: 资源不存在，或调用者无权访问该人员维度资源（两者响应一致，不泄露存在性）
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: 业务规则冲突（工号重复、区间重叠、非法状态流转、被引用不可删除）
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    PersonStatus:
+      type: string
+      enum: [draft, active, inactive]
+      description: 草稿 / 在职 / 停用；仅允许单向流转（R2）。
+    EmploymentType:
+      type: string
+      enum: [full_time, part_time, contract, intern, other]
+    AssignmentStatus:
+      type: string
+      enum: [pending, current, closed, retracted]
+    PersonSummary:
+      type: object
+      required: [personId, employeeNo, fullName, status]
+      properties:
+        personId:
+          type: string
+          format: uuid
+        employeeNo:
+          type: string
+        fullName:
+          type: string
+        status:
+          $ref: '#/components/schemas/PersonStatus'
+        departmentId:
+          type: string
+        departmentName:
+          type: string
+        positionName:
+          type: string
+    PersonDetail:
+      type: object
+      required: [personId, employeeNo, fullName, status, employmentType, employmentStartDate, createdAt]
+      properties:
+        personId:
+          type: string
+          format: uuid
+        employeeNo:
+          type: string
+          description: 唯一且停用后不复用（R1 / AC-002）
+        fullName:
+          type: string
+        contact:
+          $ref: '#/components/schemas/ContactInfo'
+        employmentType:
+          $ref: '#/components/schemas/EmploymentType'
+        employmentStartDate:
+          type: string
+          format: date
+        employmentEndDate:
+          type:
+            - string
+            - 'null'
+          format: date
+        status:
+          $ref: '#/components/schemas/PersonStatus'
+        deactivationReason:
+          type:
+            - string
+            - 'null'
+        currentAssignment:
+          oneOf:
+            - $ref: '#/components/schemas/Assignment'
+            - type: 'null'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    ContactInfo:
+      type: object
+      description: 仅联系方式（Q4）；不含证件号、薪酬、银行账户等敏感字段。
+      properties:
+        mobile:
+          type:
+            - string
+            - 'null'
+          maxLength: 32
+        email:
+          type:
+            - string
+            - 'null'
+          format: email
+    Assignment:
+      type: object
+      required: [assignmentId, personId, departmentId, departmentName, positionName, effectiveFrom, status]
+      properties:
+        assignmentId:
+          type: string
+          format: uuid
+        personId:
+          type: string
+          format: uuid
+        departmentId:
+          type: string
+        departmentName:
+          type: string
+          description: 名称快照，供历史与停用后追溯（R5）。
+        positionId:
+          type: string
+        positionName:
+          type: string
+        reportsToPersonId:
+          type:
+            - string
+            - 'null'
+          format: uuid
+        effectiveFrom:
+          type: string
+          format: date
+        effectiveTo:
+          type:
+            - string
+            - 'null'
+          format: date
+        status:
+          $ref: '#/components/schemas/AssignmentStatus'
+    PersonCreateRequest:
+      type: object
+      required: [employeeNo, fullName, employmentType, employmentStartDate, departmentId, departmentName, positionName, effectiveFrom]
+      properties:
+        employeeNo:
+          type: string
+          minLength: 1
+          maxLength: 32
+        fullName:
+          type: string
+          minLength: 1
+          maxLength: 64
+        contact:
+          $ref: '#/components/schemas/ContactInfo'
+        employmentType:
+          $ref: '#/components/schemas/EmploymentType'
+        employmentStartDate:
+          type: string
+          format: date
+        employmentEndDate:
+          type:
+            - string
+            - 'null'
+          format: date
+        departmentId:
+          type: string
+        departmentName:
+          type: string
+        positionId:
+          type: string
+        positionName:
+          type: string
+        reportsToPersonId:
+          type:
+            - string
+            - 'null'
+          format: uuid
+        effectiveFrom:
+          type: string
+          format: date
+          description: F1 的生效日期；缺省表示立即生效并进入在职。
+    PersonUpdateRequest:
+      type: object
+      minProperties: 1
+      description: 仅允许基础与雇佣信息字段；组织、岗位与汇报关系通过任职变更接口修改。
+      properties:
+        fullName:
+          type: string
+          maxLength: 64
+        contact:
+          $ref: '#/components/schemas/ContactInfo'
+        employmentType:
+          $ref: '#/components/schemas/EmploymentType'
+        employmentStartDate:
+          type: string
+          format: date
+        employmentEndDate:
+          type:
+            - string
+            - 'null'
+          format: date
+    AssignmentCreateRequest:
+      type: object
+      required: [departmentId, departmentName, positionName, effectiveFrom]
+      properties:
+        departmentId:
+          type: string
+        departmentName:
+          type: string
+        positionId:
+          type: string
+        positionName:
+          type: string
+        reportsToPersonId:
+          type:
+            - string
+            - 'null'
+          format: uuid
+        effectiveFrom:
+          type: string
+          format: date
+        effectiveTo:
+          type:
+            - string
+            - 'null'
+          format: date
+    StatusTransitionRequest:
+      type: object
+      required: [toStatus, effectiveFrom]
+      properties:
+        toStatus:
+          type: string
+          enum: [active, inactive]
+        reason:
+          type:
+            - string
+            - 'null'
+          maxLength: 200
+          description: 停用时必填（F4）。
+        effectiveFrom:
+          type: string
+          format: date
+    ChangeRecord:
+      type: object
+      required: [recordId, action, fieldName, operatorId, occurredAt]
+      properties:
+        recordId:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum: [create, update, assignment_change, assignment_retract, status_change, delete_attempt]
+        fieldName:
+          type: string
+        oldValue:
+          type:
+            - string
+            - 'null'
+        newValue:
+          type:
+            - string
+            - 'null'
+        operatorId:
+          type: string
+        operatorName:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+        effectiveFrom:
+          type:
+            - string
+            - 'null'
+          format: date
+        effectiveTo:
+          type:
+            - string
+            - 'null'
+          format: date
+    ErrorResponse:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          enum:
+            - validation_failed
+            - duplicate_employee_no
+            - overlapping_assignment
+            - invalid_report_line
+            - invalid_status_transition
+            - not_yet_retractable
+            - referenced_by_business
+            - unauthorized
+            - forbidden
+            - not_found
+            - conflict
+            - internal_error
+        message:
+          type: string
+          description: 面向用户的中文提示
+        fieldErrors:
+          type: array
+          items:
+            type: object
+            required: [field, message]
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+        conflictRef:
+          type:
+            - string
+            - 'null'
+          description: 冲突对象标识，如已占用的工号或冲突的任职区间 id。
+        requestId:
+          type:
+            - string
+            - 'null'

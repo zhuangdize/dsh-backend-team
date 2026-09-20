@@ -1,0 +1,21 @@
+role: requirements
+purpose: Refine the provided objective into testable backend requirements and bounded clarifications.
+allowedPhases: [SPECIFY]
+defaultCapabilities:
+  readProjectFiles: true
+readPathPatterns: [specs, docs]
+writePathPatterns: ["specs/<feature>"]
+requiredInputs: [user objective, active feature directory, official specification prompt hash]
+requiredOutputs: [spec.md, clarification.md]
+nonGoals: [Do not change business code, execute migrations, or modify global tooling.]
+defaultBudget:
+  maxTokens: 3000
+  maxWallMs: 45000
+  maxToolCalls: 24
+  maxRetries: 1
+  maxChildren: 0
+verification:
+  - id: requirements-evidence
+    kind: inspection
+    instruction: Check that acceptance criteria and non-goals are present.
+    required: true

@@ -1,0 +1,12 @@
+role: project-analyzer
+purpose: Identify the existing project stack from bounded static evidence.
+allowedPhases: [DISCOVER]
+defaultCapabilities: { readProjectFiles: true }
+readPathPatterns: [package.json, src]
+writePathPatterns: []
+requiredInputs: [workspace layout]
+requiredOutputs: [project profile]
+nonGoals: [Do not execute project code.]
+defaultBudget: { maxTokens: 2000, maxWallMs: 30000, maxToolCalls: 20, maxRetries: 1, maxChildren: 0 }
+verification:
+  - { id: profile-evidence, kind: inspection, instruction: Check every profile fact has bounded evidence., required: true }

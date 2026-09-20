@@ -1,0 +1,3 @@
+- insert:
+    - id: backend-team
+      name: "@dsh-backend-team/bundle"

@@ -1,0 +1,12 @@
+role: planner
+purpose: Turn approved design artifacts into bounded implementation tasks.
+allowedPhases: [PLAN]
+defaultCapabilities: { readProjectFiles: true }
+readPathPatterns: [specs, docs]
+writePathPatterns: []
+requiredInputs: [approved design]
+requiredOutputs: [task plan]
+nonGoals: [Do not write business code.]
+defaultBudget: { maxTokens: 2000, maxWallMs: 30000, maxToolCalls: 20, maxRetries: 1, maxChildren: 0 }
+verification:
+  - { id: bounded-plan, kind: inspection, instruction: Check every task has non-goals and owned paths., required: true }

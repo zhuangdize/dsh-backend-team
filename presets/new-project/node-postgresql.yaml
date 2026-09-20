@@ -1,0 +1,7 @@
+schemaVersion: 1
+strategy: new-node-postgresql
+node:
+  version: 24.19.0
+packageManager: npm
+database:
+  engine: postgresql

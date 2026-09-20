@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "version": "0.1.0-rc.6",
+      "status": "verified",
+      "expectedCapabilities": [
+        "register-tool",
+        "monotonic-guard"
+      ],
+      "nodeRange": ">=24 <25",
+      "verificationPlan": {
+        "commands": [
+          "npm pack --json --pack-destination <workspace-local pack-dir> (cwd: packages/bundle)",
+          "dsh plugin --profile backend-team-test add <absolute Bundle .tgz> --ignore-scripts --store-dir <workspace-local>",
+          "dsh --profile backend-team-test --dump-config",
+          "dsh --profile backend-team-test (Cordis boot; observer invokes ctx.tools.execute)"
+        ]
+      },
+      "verifiedAt": "2026-08-25T20:41:41.668Z",
+      "evidence": {
+        "commands": [
+          "npm pack --json --pack-destination <workspace-local pack-dir> (cwd: packages/bundle)",
+          "dsh plugin --profile backend-team-test add <absolute Bundle .tgz> --ignore-scripts --store-dir <workspace-local>",
+          "dsh --profile backend-team-test --dump-config",
+          "dsh --profile backend-team-test (Cordis boot; observer invokes ctx.tools.execute)"
+        ],
+        "sha256": "86b7b66f8c1a857f9454f2ec902520cd1a323574e0947af7505f2966fb4edca3"
+      }
+    }
+  ]
+}

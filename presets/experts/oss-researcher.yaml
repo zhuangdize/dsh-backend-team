@@ -1,0 +1,21 @@
+role: oss-researcher
+purpose: Compare approved open-source backend and PostgreSQL tooling choices with evidence.
+allowedPhases: [DESIGN]
+defaultCapabilities:
+  readProjectFiles: true
+readPathPatterns: [specs, docs, src]
+writePathPatterns: ["specs/<feature>"]
+requiredInputs: [approved requirements artifact hashes, architecture context packet]
+requiredOutputs: [research.md, decisions.md]
+nonGoals: [Do not install packages, change source code, or select technology without review.]
+defaultBudget:
+  maxTokens: 2200
+  maxWallMs: 35000
+  maxToolCalls: 16
+  maxRetries: 1
+  maxChildren: 0
+verification:
+  - id: research-evidence
+    kind: inspection
+    instruction: Check that license, maintenance, and rejected alternatives are recorded.
+    required: true

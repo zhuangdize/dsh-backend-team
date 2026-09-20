@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "component": "dbgate",
+  "version": "7.2.3",
+  "profile": "postgresql-only",
+  "packages": [
+    { "name": "dbgate-api", "version": "7.2.3", "registry": "https://registry.npmjs.org/dbgate-api/-/dbgate-api-7.2.3.tgz", "license": "GPL-3.0", "integrity": "sha512-CvQ2KEbZonAERbdTW6txXFFodR6xWfNCN6T4IybEdxHVowXGeBNv+fzUZK9cfwwfkonaJeOzbRrSPn7RMmIUiQ==" },
+    { "name": "dbgate-web", "version": "7.2.3", "registry": "https://registry.npmjs.org/dbgate-web/-/dbgate-web-7.2.3.tgz", "license": "GPL-3.0", "integrity": "sha512-+dXwPmA8ArRPfI4Ssw36DWtKcuP89K2GxVy47yN1mDvwLG9UNsrX7ac3/XmMib7x9Oj57Zp+qkf6gUv3WMHs0Q==" },
+    { "name": "dbgate-plugin-postgres", "version": "7.2.3", "registry": "https://registry.npmjs.org/dbgate-plugin-postgres/-/dbgate-plugin-postgres-7.2.3.tgz", "license": "GPL-3.0", "integrity": "sha512-XUG67Xbe2hEOz+eGSKUnHNqUeVhl9/aPcdIOGs3ArJ7TmVfIOLASYlYAV7cf4gv0/4dKLcgZCNwVk/jYgUcPCg==" }
+  ],
+  "overrides": {
+    "dbgate-api": { "jsonwebtoken": "9.0.3", "tar": "7.5.22" },
+    "flat-cache": { "flatted": "3.4.4" },
+    "external-editor": { "tmp": "0.2.7" },
+    "qs": "6.16.0",
+    "http": "0.0.1-security"
+  },
+  "auditStatus": "passed-profile-excludes-excel",
+  "residualRisks": {},
+  "status": "provenance-verified-release-blocked"
+}

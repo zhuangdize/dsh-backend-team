@@ -1,0 +1,30 @@
+{
+  "component": "uv",
+  "version": "0.12.3",
+  "license": "Apache-2.0 OR MIT",
+  "source": "https://github.com/astral-sh/uv/releases/tag/0.12.3",
+  "artifacts": {
+    "darwin-arm64": {
+      "component": "uv",
+      "version": "0.12.3",
+      "license": "Apache-2.0 OR MIT",
+      "source": "https://github.com/astral-sh/uv/releases/tag/0.12.3",
+      "url": "https://releases.astral.sh/github/uv/releases/download/0.12.3/uv-aarch64-apple-darwin.tar.gz",
+      "bytes": 17686637,
+      "sha256": "546f7f8a6c70ff13a3a9d2bc958db3427298cebf3e0cb756f9177133b7068843",
+      "allowedHosts": ["releases.astral.sh"],
+      "destination": ".backend-team/cache/downloads/uv-0.12.3.tar.gz"
+    },
+    "darwin-x64": {
+      "component": "uv",
+      "version": "0.12.3",
+      "license": "Apache-2.0 OR MIT",
+      "source": "https://github.com/astral-sh/uv/releases/tag/0.12.3",
+      "url": "https://releases.astral.sh/github/uv/releases/download/0.12.3/uv-x86_64-apple-darwin.tar.gz",
+      "bytes": 19547702,
+      "sha256": "4c9f52262a14da336e4a42ed24992d12d0c956acde87619e4611d321dffa602b",
+      "allowedHosts": ["releases.astral.sh"],
+      "destination": ".backend-team/cache/downloads/uv-0.12.3.tar.gz"
+    }
+  }
+}

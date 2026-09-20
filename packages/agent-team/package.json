@@ -1,0 +1,67 @@
+{
+  "name": "@dsh-backend-team/agent-team",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./agent-result-decoder": {
+      "types": "./dist/agent-result-decoder.d.ts",
+      "default": "./dist/agent-result-decoder.js"
+    },
+    "./context-builder": {
+      "types": "./dist/context-builder.d.ts",
+      "default": "./dist/context-builder.js"
+    },
+    "./context-manager": {
+      "types": "./dist/context-manager.d.ts",
+      "default": "./dist/context-manager.js"
+    },
+    "./long-task-execution-session": {
+      "types": "./dist/long-task-execution-session.d.ts",
+      "default": "./dist/long-task-execution-session.js"
+    },
+    "./delegation-guard": {
+      "types": "./dist/delegation-guard.d.ts",
+      "default": "./dist/delegation-guard.js"
+    },
+    "./handoff-store": {
+      "types": "./dist/handoff-store.d.ts",
+      "default": "./dist/handoff-store.js"
+    },
+    "./ownership-manager": {
+      "types": "./dist/ownership-manager.d.ts",
+      "default": "./dist/ownership-manager.js"
+    },
+    "./preset-loader": {
+      "types": "./dist/preset-loader.d.ts",
+      "default": "./dist/preset-loader.js"
+    },
+    "./result-verifier": {
+      "types": "./dist/result-verifier.d.ts",
+      "default": "./dist/result-verifier.js"
+    },
+    "./role-policy": {
+      "types": "./dist/role-policy.d.ts",
+      "default": "./dist/role-policy.js"
+    },
+    "./task-scheduler": {
+      "types": "./dist/task-scheduler.d.ts",
+      "default": "./dist/task-scheduler.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@dsh-backend-team/contracts": "0.1.0",
+    "yaml": "2.9.1"
+  }
+}

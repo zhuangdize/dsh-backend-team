@@ -1,0 +1,55 @@
+{
+  "name": "@dsh-backend-team/project-analyzer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./detectors/node-detector": {
+      "types": "./dist/detectors/node-detector.d.ts",
+      "default": "./dist/detectors/node-detector.js"
+    },
+    "./detectors/node-version-detector": {
+      "types": "./dist/detectors/node-version-detector.d.ts",
+      "default": "./dist/detectors/node-version-detector.js"
+    },
+    "./detectors/package-manager-detector": {
+      "types": "./dist/detectors/package-manager-detector.d.ts",
+      "default": "./dist/detectors/package-manager-detector.js"
+    },
+    "./detectors/framework-detector": {
+      "types": "./dist/detectors/framework-detector.d.ts",
+      "default": "./dist/detectors/framework-detector.js"
+    },
+    "./detectors/database-detector": {
+      "types": "./dist/detectors/database-detector.d.ts",
+      "default": "./dist/detectors/database-detector.js"
+    },
+    "./detectors/test-detector": {
+      "types": "./dist/detectors/test-detector.d.ts",
+      "default": "./dist/detectors/test-detector.js"
+    },
+    "./detectors/command-detector": {
+      "types": "./dist/detectors/command-detector.d.ts",
+      "default": "./dist/detectors/command-detector.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@dsh-backend-team/contracts": "0.1.0",
+    "@iarna/toml": "2.2.5",
+    "fast-glob": "3.3.3",
+    "ignore": "7.0.6",
+    "yaml": "2.9.1",
+    "zod": "4.4.3"
+  }
+}

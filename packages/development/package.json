@@ -1,0 +1,36 @@
+{
+  "name": "@dsh-backend-team/development",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./run-controller": {
+      "types": "./dist/development-run-controller.d.ts",
+      "default": "./dist/development-run-controller.js"
+    },
+    "./checkpoint-store": {
+      "types": "./dist/file-development-checkpoint-store.d.ts",
+      "default": "./dist/file-development-checkpoint-store.js"
+    },
+    "./plan-loader": {
+      "types": "./dist/file-development-plan-loader.d.ts",
+      "default": "./dist/file-development-plan-loader.js"
+    },
+    "./patch-tracker": {
+      "types": "./dist/patch-tracker.d.ts",
+      "default": "./dist/patch-tracker.js"
+    },
+    "./file-snapshot": {
+      "types": "./dist/file-snapshot.d.ts",
+      "default": "./dist/file-snapshot.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  }
+}

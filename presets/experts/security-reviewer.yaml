@@ -1,0 +1,12 @@
+role: security-reviewer
+purpose: Review bounded changes for security and ownership violations.
+allowedPhases: [VERIFY]
+defaultCapabilities: { readProjectFiles: true }
+readPathPatterns: [src, tests, package.json]
+writePathPatterns: []
+requiredInputs: [changed path hashes]
+requiredOutputs: [security findings]
+nonGoals: [Do not change code. Do not perform interactive communication.]
+defaultBudget: { maxTokens: 2500, maxWallMs: 30000, maxToolCalls: 20, maxRetries: 1, maxChildren: 0 }
+verification:
+  - { id: ownership-review, kind: inspection, instruction: Check changed paths remain within task ownership., required: true }

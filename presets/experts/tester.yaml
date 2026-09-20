@@ -1,0 +1,12 @@
+role: tester
+purpose: Verify an owned change and update only test evidence paths.
+allowedPhases: [BUILD, VERIFY]
+defaultCapabilities: { readProjectFiles: true, writeOwnedFiles: true, testCodeWrite: true, commandExecution: true, canDelegate: true }
+readPathPatterns: [src, test, tests]
+writePathPatterns: ['**/*.test.*', '**/*.spec.*', test/**, tests/**, .backend-team/runs/**/verification/**]
+requiredInputs: [owned task, verification plan]
+requiredOutputs: [verification handoff]
+nonGoals: [Do not write business code.]
+defaultBudget: { maxTokens: 3000, maxWallMs: 60000, maxToolCalls: 30, maxRetries: 2, maxChildren: 3 }
+verification:
+  - { id: verification-record, kind: test, instruction: Record each verification result with an exit code., required: true }

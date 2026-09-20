@@ -1,0 +1,16 @@
+version: 1
+name: backend-security
+scope: owned-patch-and-approved-configuration
+checks:
+  - code: SECRET_CREDENTIAL
+    severity: block
+  - code: PRIVATE_KEY
+    severity: block
+  - code: PRODUCTION_TARGET
+    severity: block
+  - code: MISSING_DENY_AUTH_TEST
+    severity: block
+  - code: MISSING_DENY_ROLE_TEST
+    severity: block
+  - code: MISSING_DENY_TENANT_TEST
+    severity: block

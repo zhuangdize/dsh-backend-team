@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "harness": "0.1.0-rc.6",
+  "status": "verified-fixture",
+  "capturedAt": "2026-08-28T05:55:45.681Z",
+  "source": "workspace-local disposable runtime",
+  "packages": [
+    { "name": "@deepseek-ai/dsh-agent", "version": "0.1.0-rc.6", "publicEntry": ".", "declarationSha256": "577f7ee31d8954c8a09c4af9ce9c1fbdb25220caff40b2120bec257305bd2a35" },
+    { "name": "@deepseek-ai/dsh-client-runtime", "version": "0.1.0-rc.6", "publicEntry": "./client", "declarationSha256": "95df9b8e90fbefa4382ec9218bb882c4c2432308bdd1bd0075f857d2dcff4f16" },
+    { "name": "@deepseek-ai/dsh-client-modules", "version": "0.1.0-rc.6", "publicEntry": "./client", "declarationSha256": "1969305583f5f3e4cfe0bc00829f0ee94d2f2eb62c50a898da2cb184cf14709f" },
+    { "name": "@deepseek-ai/dsh-client-ui-conversation", "version": "0.1.0-rc.6", "publicEntry": "./client", "declarationSha256": "335d74ce4bec58a62b2ceed05cb398d0616d5ed76ee3705d0e6a1c56382d5b42" },
+    { "name": "@deepseek-ai/dsh-client-ui-layout", "version": "0.1.0-rc.6", "publicEntry": "./client", "declarationSha256": "a7f4afb8867746bbdd4b92a98263a16641d61d1f462a49251a462396610c8074" },
+    { "name": "@deepseek-ai/dsh-host-webserver", "version": "0.1.0-rc.6", "publicEntry": ".", "declarationSha256": "aae41243afcde36292e58fe0c7684719ba952530aa0c34d3c4e077cf95ac14f8" },
+    { "name": "@deepseek-ai/dsh-session", "version": "0.1.0-rc.6", "publicEntry": ".", "declarationSha256": "f16e93893a31b25e1ed07ada6310cd72c5265fb8cdb374a6a1ff12a8949a6e69" }
+  ],
+  "publicContracts": [
+    "ctx.clientModules",
+    "ClientContext",
+    "conversationEvents.register(ConversationNodeDefinition)",
+    "slots.inject('conversation.chat.node', ...) ",
+    "slots.inject('shell.overlay', ...) ",
+    "window.__ModuleLoader__.load({ id, factory })",
+    "ctx.webServer.register(WebRoute)",
+    "ctx.agents.create/createAgent -> AgentHandle(agent, dispose)"
+  ],
+  "realSmoke": {
+    "status": "passed",
+    "node": "24.19.0",
+    "npm": "11.17.0",
+    "pnpm": "11.7.0",
+    "profile": "backend-team-test",
+    "bundleSha256": "419207fd849986b58d6911bb7ac755992848b8c4fc08eb0efd1f9164bd1b5096",
+    "tool": "backend_team_status",
+    "toolExecution": "passed",
+    "clientBrowserE2E": "not-run"
+  }
+}

@@ -1,0 +1,211 @@
+openapi: 3.1.0
+
+info:
+  title: GUI Workflow Acceptance - Local Health Endpoint
+  version: 1.0.0
+  description: |
+    External HTTP contract for the approved feature `gui-workflow-acceptance`
+    (see ../spec.md and ../clarification.md). The approved surface is exactly one
+    request shape, GET /health, and three outcomes: 200, 404, 405. No endpoint is
+    declared here that the requirements did not approve.
+
+    Binding is the IPv4 loopback literal 127.0.0.1:3001 with no wildcard interface
+    (R-03); host and port are code constants, with no environment-variable or CLI
+    configuration (Q-07, AC-004). Stopping the process releases the port (F-03).
+    Runtime uses Node.js 24 built-in modules only and adds zero dependencies.
+
+    Authentication is absent by approved design, not by omission: the root-level
+    `security: []` below records it, and no securityScheme is invented (Q-08).
+    State, persistence and request-content echo are all excluded (R-03).
+
+    Verification status: AC-001 through AC-005 are NOT RUN. No HTTP client, test
+    suite, YAML parser or OpenAPI linter has exercised this document. The schema
+    constrains the shape of the success body only; byte-exactness is asserted by
+    tests. Nothing below may be reported as a passing check.
+
+servers:
+  - url: http://127.0.0.1:3001
+    description: >-
+      Loopback-only IPv4 literal listening address, and the sole access control
+      (R-03, AC-004). Clients that cannot reach this loopback endpoint get no
+      response; IPv6 ::1 attempts are expected to fail and are out of acceptance.
+
+security: []
+
+x-unmatched-path-rule:
+  status-code: 404
+  precedence: 404 is evaluated before 405
+  matching: exact string, case sensitive
+  normalization: none (no trailing-slash folding, no case folding, no percent-decoding, no redirects, no aliases)
+  comparison-input: substring of the raw request target before the first question mark; the query string never takes part in routing
+  description: |
+    Any request whose path is not the exact string /health returns 404 whatever
+    its method, so POST /nope is 404 rather than 405 (F-02, Q-02). This covers /,
+    /health/, /HEALTH and /healthz (R-01, Q-06). This is a global routing rule and
+    not an addressable resource, so it is recorded as this document-level extension
+    instead of a wildcard path template, which would fabricate an unapproved
+    endpoint and weaken the strict-match rule (plan.md decision D-10). Consumers
+    must read this extension together with the single entry under `paths`.
+  declared-test-cases:
+    - GET / -> 404
+    - GET /health/ -> 404
+    - GET /HEALTH -> 404
+    - GET /healthz -> 404
+    - POST /nope -> 404 (path check wins over the method check)
+
+x-out-of-scope-response-details:
+  description: |
+    404 and 405 are accepted on status code and complete response termination only.
+    Their bodies, Content-Type headers and an Allow header on 405 are explicitly
+    outside acceptance (Q-05), so the 404 and 405 responses referenced below declare
+    no content object and no header schema, and no Allow header is promised.
+
+paths:
+  /health:
+    description: |
+      The only resource in this API: unique, exact, case sensitive, with no alias
+      or redirect (R-01). A query string does not change routing, so GET /health?a=1
+      follows the success path (Q-06); see the HealthQuery parameter.
+    parameters:
+      - $ref: '#/components/parameters/HealthQuery'
+    get:
+      operationId: getHealth
+      summary: Liveness probe returning the fixed JSON constant
+      description: |
+        Returns 200 with Content-Type application/json (bare media type emitted;
+        acceptance compares case-insensitively and tolerates an optional charset
+        parameter, Q-04) and a body of exactly 11 bytes, the literal
+        {"ok":true} with no whitespace, no newline and no dynamic fields
+        (F-01, R-02, Q-03). The response must fully terminate. Repeat and
+        concurrent requests answer identically and no request content is echoed
+        (R-03). Covers AC-001, which is NOT RUN.
+      responses:
+        "200":
+          $ref: '#/components/responses/HealthFound'
+    post:
+      operationId: postHealth
+      summary: Method not allowed on the health resource
+      description: >-
+        Non-GET method on the known resource /health returns 405 (F-03, AC-003).
+        Only the status code and complete termination are asserted (Q-05). NOT RUN.
+      responses:
+        "405":
+          $ref: '#/components/responses/MethodNotAllowed'
+    put:
+      operationId: putHealth
+      summary: Method not allowed on the health resource
+      description: >-
+        Non-GET method on the known resource /health returns 405 (F-03, AC-003).
+        Only the status code and complete termination are asserted (Q-05). NOT RUN.
+      responses:
+        "405":
+          $ref: '#/components/responses/MethodNotAllowed'
+    patch:
+      operationId: patchHealth
+      summary: Method not allowed on the health resource
+      description: >-
+        Non-GET method on the known resource /health returns 405 (F-03, AC-003).
+        Only the status code and complete termination are asserted (Q-05). NOT RUN.
+      responses:
+        "405":
+          $ref: '#/components/responses/MethodNotAllowed'
+    delete:
+      operationId: deleteHealth
+      summary: Method not allowed on the health resource
+      description: >-
+        Non-GET method on the known resource /health returns 405 (F-03, AC-003),
+        and stopping the process releases the listening port (F-03). NOT RUN.
+      responses:
+        "405":
+          $ref: '#/components/responses/MethodNotAllowed'
+    head:
+      operationId: headHealth
+      summary: Method not allowed on the health resource
+      description: >-
+        HEAD is treated as a non-GET method and returns 405. This is the approved
+        literal reading of the requirement and deliberately deviates from the RFC
+        convention that HEAD mirrors GET; the user adopted it as ruling Q-01, so
+        it is a contract-level decision rather than a defect (AC-003). NOT RUN.
+      responses:
+        "405":
+          $ref: '#/components/responses/MethodNotAllowed'
+    options:
+      operationId: optionsHealth
+      summary: Method not allowed on the health resource
+      description: >-
+        OPTIONS is treated as a non-GET method and returns 405 under the same
+        explicit deviation recorded for HEAD (F-03, Q-01, AC-003). No CORS or
+        preflight behaviour is provided (Non-Goals). NOT RUN.
+      responses:
+        "405":
+          $ref: '#/components/responses/MethodNotAllowed'
+
+components:
+  parameters:
+    HealthQuery:
+      name: HealthQuery
+      in: query
+      required: false
+      style: form
+      explode: true
+      description: >-
+        Free-form placeholder for an arbitrary query string, expanded to key=value
+        pairs; it is not a field literally named HealthQuery. The query string does
+        not take part in routing, so any subset of parameters, and none at all,
+        produces the same outcome (Q-06, AC-001).
+      schema:
+        type: object
+        additionalProperties: true
+
+  responses:
+    HealthFound:
+      description: >-
+        Success: exact resource /health reached with GET. Content-Type is
+        application/json and the body is the 11-byte constant {"ok":true}, with the
+        response fully terminated (F-01, R-02, Q-03, AC-001). The byte-level rule is
+        authoritative over the schema below. NOT RUN.
+      headers:
+        Content-Type:
+          description: >-
+            Emitted as the bare media type application/json. Acceptance compares the
+            media type case-insensitively and tolerates an optional charset parameter
+            so an implementation detail cannot cause a false failure (R-02, Q-04).
+          schema:
+            const: application/json
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HealthResponse'
+          example:
+            ok: true
+    MethodNotAllowed:
+      description: >-
+        Known resource /health reached with any non-GET method, namely POST, PUT,
+        PATCH, DELETE, HEAD or OPTIONS, returns 405 (F-03, Q-01, AC-003). Body,
+        Content-Type and Allow are outside acceptance (Q-05), so no content or
+        header schema is declared. Status code and complete termination only.
+        NOT RUN.
+    NotFound:
+      description: >-
+        Declared for traceability of the global rule in x-unmatched-path-rule
+        (F-02, Q-02, AC-002) and referenced from no path, because attaching it to a
+        wildcard template would invent an endpoint the requirements exclude. Every
+        request whose path is not exactly /health receives 404 regardless of method.
+        Body, Content-Type and Allow are outside acceptance (Q-05). NOT RUN.
+
+  schemas:
+    HealthResponse:
+      type: object
+      description: >-
+        Shape-level constraint for the success body. The authoritative rule is the
+        11-byte literal {"ok":true} with no whitespace, newline or dynamic field,
+        asserted byte for byte by the test suite rather than by this schema
+        (R-02, Q-03, AC-001).
+      properties:
+        ok:
+          type: boolean
+          const: true
+          description: Always true; no version, timestamp, uptime or dependency fields exist (Non-Goals).
+      required:
+        - ok
+      additionalProperties: false

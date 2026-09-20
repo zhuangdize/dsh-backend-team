@@ -1,0 +1,22 @@
+role: database-designer
+purpose: Produce a PostgreSQL data model and evidence-based database test plan.
+allowedPhases: [DESIGN]
+defaultCapabilities:
+  readProjectFiles: true
+  canDelegate: true
+readPathPatterns: [specs, docs, src]
+writePathPatterns: ["specs/<feature>"]
+requiredInputs: [approved requirements artifact hashes, architecture context packet]
+requiredOutputs: [data-model.md, test-plan.md]
+nonGoals: [Do not execute migrations, change application source, or install database software.]
+defaultBudget:
+  maxTokens: 3000
+  maxWallMs: 45000
+  maxToolCalls: 24
+  maxRetries: 1
+  maxChildren: 1
+verification:
+  - id: database-evidence
+    kind: inspection
+    instruction: Check that constraints and test scenarios are evidenced.
+    required: true

@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "status": "partial-verified",
+  "harness": "0.1.0-rc.6",
+  "runtime": {
+    "node": "24.19.0",
+    "profile": "headless",
+    "isolation": "temporary DSH_HOME, XDG directories, npm cache, and Profile"
+  },
+  "command": "npm run verify:agent-runtime",
+  "adapter": {
+    "entry": "packages/harness-adapter/dist/harness-agent-runtime.js",
+    "messageConstructor": "@deepseek-ai/dsh-llm/message#createUserMessage",
+    "resultBoundary": "HarnessAgentRuntime.spawn -> application AgentHandle.result"
+  },
+  "publicSurface": {
+    "create": "ctx.agents.create({ sessionId, meta, agentOptions })",
+    "handle": ["agent", "dispose"],
+    "agent": ["id", "status", "options", "session", "cancel", "whenIdle", "followup"],
+    "resultSource": "agent.session.events assistant/message",
+    "usageSource": "assistant/message.data.usage",
+    "disposalCheck": "ctx.agents.get(sessionId) === undefined"
+  },
+  "observed": {
+    "createdAgentStatus": "idle",
+    "provider": "dsh-agent-runtime-probe",
+    "model": "probe-model",
+    "maxTokens": 64,
+    "assistantEvent": "assistant/message",
+    "assistantText": "probe result",
+    "usage": {
+      "inputTokens": 2,
+      "outputTokens": 2
+    },
+    "adapterHostUsage": {
+      "tokens": 4,
+      "wallMs": "non-negative finite",
+      "toolCalls": 0,
+      "retries": 0
+    },
+    "disposed": true
+  },
+  "method": "The verification builds the workspace adapter, then the observer registers an in-process public LLM adapter and routes ctx.agents through HarnessAgentRuntime. HarnessAgentRuntime creates the official Agent, sends an identified user message, waits for agent.whenIdle(), decodes the assistant event with host-side usage, and disposes the returned handle.",
+  "notProven": [
+    "Production Bundle/coordinator composition that wires the adapter and decoder into the orchestration port",
+    "A real DeepSeek credential/model network request",
+    "Codex Chrome browser E2E against the Web UI"
+  ],
+  "releaseImpact": "Production Agent binding, browser E2E, and release remain blocked until the missing mappings and gates are verified."
+}

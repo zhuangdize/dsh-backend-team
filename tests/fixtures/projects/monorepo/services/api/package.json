@@ -1,0 +1,10 @@
+{
+  "name": "@workspace-fixture/api",
+  "private": true,
+  "engines": {
+    "node": ">=20 <21"
+  },
+  "dependencies": {
+    "express": "5.1.0"
+  }
+}
