@@ -35,8 +35,8 @@ attestation 和审计报告一起发布到 GitHub Release。手动运行必须�
 、`release_tag` 和已审核的 `agent_fixture_path`；任一 gate、摘要绑定、签名或稳定 HTTPS 地址失败，工作流会在发布前停止。工作流不会隐式接受仓库内的 partial fixture。
 
 ```sh
-.backend-team/runtime/nvm/versions/node/v24.19.0/bin/node scripts/build-release.mjs --channel release-candidate --evidence artifacts/release-evidence.json
-.backend-team/runtime/nvm/versions/node/v24.19.0/bin/node scripts/verify-release.mjs --tarball dist/dsh-backend-team-bundle-<version>.tgz --evidence artifacts/release-evidence.json
+.backend-team/runtime/nvm/versions/node/v24.19.0/bin/node scripts/build-release.mjs --channel release-candidate --evidence artifacts/release-evidence.json --agent-fixture artifacts/agent-runtime-verified.json --distribution artifacts/release-distribution.json
+.backend-team/runtime/nvm/versions/node/v24.19.0/bin/node scripts/verify-release.mjs --tarball dist/dsh-backend-team-bundle-<version>.tgz --evidence artifacts/release-evidence.json --agent-fixture artifacts/agent-runtime-verified.json
 ```
 
 构建会在 tarball 旁生成同名的 `.sha256`、`.cdx.json`（CycloneDX 1.5
