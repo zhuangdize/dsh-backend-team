@@ -13,7 +13,7 @@ Profile, official Harness seam, browser, or credential-gated model.
 | Web client asset route | `npm run verify:web-client` and packed Bundle inspection | passed for diagnostic client route |
 | Browser client module/overlay smoke | Codex Chrome loaded the isolated rc.6 Web Profile, materialized the Bundle client factory, and rendered the additive overlay without console errors | passed for client load; control route remains unavailable in diagnostic mode |
 | Full production Bundle/coordinator composition | Core assembles the specification and approval workflow; Bundle supplies durable development controls and a real artifact-file plan loader. Chrome with deterministic agents completes approvals and two slices across pause/recovery. Default official Profile still exposes diagnostic mode; automatic production assembly and real-model acceptance remain missing | blocked |
-| PostgreSQL distribution | native Darwin arm64/x64 artifacts, hashes, and dependency closure | arm64 rebuilt and verified from an extracted archive (PostgreSQL 18.6; loader-relative `libpq`, `pg_isready`, real SCRAM/loopback execution-port smoke); native x64 acceptance deferred by user on 2026-09-08, not a blocker for current local Apple Silicon delivery; broader distribution still requires release URL/signature and architecture evidence |
+| PostgreSQL distribution | native Darwin arm64/x64 artifacts, hashes, dependency closure, and external provenance | GitHub Actions Run `35565633720` rebuilt both architectures, completed lifecycle smoke and signed attestation, and published [v0.1.0-rc.1](https://github.com/zhuangdize/dsh-backend-team/releases/tag/v0.1.0-rc.1); public manifest is `status=verified`, while clean consumer Profile installation remains a separate T22/D01 check |
 | DbGate lifecycle and GUI | [real Chrome GUI and lifecycle evidence](dbgate-7.2.3-lifecycle.md): table/PK/index/FK/data readback, bounded launcher readiness, protected one-time login, CredentialStore-backed automatic design connection, GUI write isolation and actual production control route; native fixture verifies migration baseline/upgrade/rollback and cleanup; selected runtime security probes pass; PostgreSQL-only profile excludes the Excel connector and `xlsx`; qs 6.16.0 and unused-http security overrides are enforced by the installer | local acceptance passed; fresh network-backed audit and incomplete official production/migration acceptance remain release gates |
 | Browser acceptance | Codex Chrome opened the actual rc.6 Web UI at loopback port 3080 using a fresh workspace-local Profile and installed Bundle; official API-key setup and diagnostic overlay rendered | official UI startup passed; full production scenario not run |
 | Real DeepSeek model | no key found in inherited environment/default Harness credential file/default or worktree dotenv; custom profiles are not certified | not run; credential unavailable in checked locations |
@@ -819,6 +819,26 @@ The release-material builder now accepts a signed distribution record through
 `--distribution`; it requires the external signature evidence to carry the exact
 Bundle SHA-256 before writing `verified` metadata. Omitted distribution input keeps
 the existing fail-closed `not-attested` output.
+
+### 2026-09-21 — T16/T21 external PostgreSQL runtime publication
+
+GitHub Actions Run `35565633720` rebuilt the PostgreSQL 18.6 runtime on native
+macOS arm64 and x64 runners from commit `800d27b06aab8131c43ada77c332e90a3e03822e`.
+Both jobs passed workspace build, architecture checks, PostgreSQL lifecycle smoke,
+evidence packaging and `actions/attest`. The resulting public Release is
+[v0.1.0-rc.1](https://github.com/zhuangdize/dsh-backend-team/releases/tag/v0.1.0-rc.1)
+and contains both archives, `SHA256SUMS`, smoke evidence, signed attestation
+bundles, the source manifest and the generated verified runtime manifest.
+
+The published archive hashes are arm64
+`43023496c1e4e256a84525723cc484dd1f4490d9c084affd056e38b95d814190` and x64
+`bfaed6046c1fe65931307ad2bea22d2df076c8af38e61fab5c17f4e8a0f7c40c`. The
+public attestation pages [arm64](https://github.com/zhuangdize/dsh-backend-team/attestations/48847944)
+and [x64](https://github.com/zhuangdize/dsh-backend-team/attestations/48848539)
+show matching archive subject digests and the same workflow commit. The checked-in
+manifest now records stable HTTPS release URLs and `status=verified`; the Bundle
+release-candidate remains blocked until real production release evidence and its
+signed distribution are supplied.
 
 ### 2026-09-15 — T21 local dual-architecture PostgreSQL build
 
