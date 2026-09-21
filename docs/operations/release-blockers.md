@@ -27,6 +27,7 @@
 ## 当前能立即执行的部分
 
 - 根目录 Bundle 的 `.sha256`、CycloneDX SBOM 和 materials sidecar 已补齐，`archive-checksum-sbom` 已通过。
+- `.github/workflows/release-bundle.yml` 已补齐候选发布编排：同一归档先构建、再 attestation、再绑定签名材料并执行 verify/audit，最后发布稳定 Release 资产；干净 checkout 的 `dist/` 创建也已修复。
 - `npm run typecheck`、`npm run lint`、`npm run build`、Agent runtime、DSH production ports 和 Web client probe 已在工作区 Node 24.19.0 下通过。
 - 3080 本地宿主已恢复，可用于手动 Chrome 验收。
 

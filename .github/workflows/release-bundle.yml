@@ -6,11 +6,20 @@ on:
         description: Repository path to reviewed release evidence for this revision
         required: true
         type: string
+      release_tag:
+        description: Public GitHub Release tag, for example v0.1.0-rc.2
+        required: true
+        type: string
 permissions:
-  contents: read
+  contents: write
+  id-token: write
+  attestations: write
 jobs:
   release-check:
     runs-on: macos-14
+    env:
+      RELEASE_EVIDENCE: ${{ inputs.evidence_path }}
+      RELEASE_TAG: ${{ inputs.release_tag }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,7 +33,74 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint -- --quiet
       - run: npm run build
-      - name: Validate evidence and build release candidate
+      - name: Build unsigned candidate and capture archive
+        id: bundle
+        run: |
+          set -euo pipefail
+          case "$RELEASE_TAG" in
+            v[0-9]*) ;;
+            *) echo 'release_tag must start with v and a numeric version' >&2; exit 1 ;;
+          esac
+          node scripts/build-release.mjs --channel local-development --evidence "$RELEASE_EVIDENCE"
+          tarball=$(find dist -maxdepth 1 -type f -name '*.tgz' -print -quit)
+          test -n "$tarball"
+          echo "tarball=$tarball" >> "$GITHUB_OUTPUT"
+          echo "filename=$(basename "$tarball")" >> "$GITHUB_OUTPUT"
+      - name: Create signed Bundle attestation
+        id: provenance
+        uses: actions/attest@v4
+        with:
+          subject-path: ${{ steps.bundle.outputs.tarball }}
+      - name: Bind signature and stable release URL to the exact archive
         env:
-          RELEASE_EVIDENCE: ${{ inputs.evidence_path }}
-        run: node scripts/build-release.mjs --channel release-candidate --evidence "$RELEASE_EVIDENCE"
+          TARBALL: ${{ steps.bundle.outputs.tarball }}
+          FILENAME: ${{ steps.bundle.outputs.filename }}
+          ATTESTATION_BUNDLE: ${{ steps.provenance.outputs.bundle-path }}
+        run: |
+          set -euo pipefail
+          test -s "$ATTESTATION_BUNDLE"
+          cp "$ATTESTATION_BUNDLE" "${TARBALL}.attestation.json"
+          node --input-type=module <<'NODE'
+          import { createHash } from 'node:crypto'
+          import { readFile, writeFile } from 'node:fs/promises'
+          import { basename } from 'node:path'
+          const tarball = process.env.TARBALL
+          const filename = basename(tarball)
+          const digest = createHash('sha256').update(await readFile(tarball)).digest('hex')
+          const base = `https://github.com/${process.env.GITHUB_REPOSITORY}/releases/download/${process.env.RELEASE_TAG}`
+          await writeFile('dist/release-distribution.json', `${JSON.stringify({
+            signature: {
+              status: 'verified',
+              provider: 'GitHub Actions artifact attestations',
+              evidenceRef: `${base}/${filename}.attestation.json`,
+              artifactSha256: digest,
+            },
+            stableDownloadUrl: `${base}/${filename}`,
+            runtimeProvenance: 'GitHub Actions signed Bundle attestation',
+          }, null, 2)}\n`)
+          NODE
+      - name: Finalize and verify signed release candidate
+        env:
+          TARBALL: ${{ steps.bundle.outputs.tarball }}
+        run: |
+          set -euo pipefail
+          node scripts/build-release.mjs --channel release-candidate --evidence "$RELEASE_EVIDENCE" --tarball "$TARBALL" --distribution dist/release-distribution.json
+          node scripts/verify-release.mjs --channel release-candidate --tarball "$TARBALL" --evidence "$RELEASE_EVIDENCE"
+          node scripts/audit-release-materials.mjs --tarball "$TARBALL" --output dist/release-audit.json
+      - name: Publish signed Bundle release
+        env:
+          TARBALL: ${{ steps.bundle.outputs.tarball }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release create "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Backend Agent Team Bundle $RELEASE_TAG" \
+            --notes "Signed Backend Agent Team Bundle release candidate. The release evidence path was reviewed before this workflow ran." \
+            "$TARBALL" \
+            "$TARBALL.sha256" \
+            "$TARBALL.cdx.json" \
+            "$TARBALL.materials.json" \
+            "$TARBALL.attestation.json" \
+            dist/release-audit.json

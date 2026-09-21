@@ -840,6 +840,18 @@ manifest now records stable HTTPS release URLs and `status=verified`; the Bundle
 release-candidate remains blocked until real production release evidence and its
 signed distribution are supplied.
 
+### 2026-09-21 — T21 Bundle release workflow hardening
+
+The Bundle release workflow now performs the release-candidate supply-chain steps
+against one immutable archive: clean checkout and full checks, unsigned pack,
+GitHub Actions artifact attestation, digest-bound distribution metadata, release
+verification, material audit, and publication of the archive plus checksum, SBOM,
+materials, attestation, and audit report. `build-release.mjs` also supports
+finalizing an existing tarball after attestation and creates `dist/` in a clean
+checkout. This removes the workflow plumbing gap; it does not promote a release
+until the four required production evidence gates are supplied and independently
+reviewed.
+
 ### 2026-09-15 — T21 local dual-architecture PostgreSQL build
 
 The official PostgreSQL 18.6 source manifest was downloaded and its SHA-256

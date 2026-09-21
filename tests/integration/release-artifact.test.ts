@@ -7,10 +7,10 @@ import { createHash } from 'node:crypto'
 import { writeReleaseMaterials, verifyReleaseMaterials } from '../../scripts/release-materials.mjs'
 
 describe('release artifact policy', () => {
-  it('keeps the checked-in runtime manifest blocked until native hashes exist', async () => {
+  it('keeps the checked-in runtime manifest verified after native publication', async () => {
     const manifest = JSON.parse(await readFile(resolve(import.meta.dirname, '../../runtime-manifests/postgresql-18.6-darwin.json'), 'utf8')) as { status: string; artifacts: unknown[] }
-    expect(manifest.status).toBe('pending-native-build')
-    expect(manifest.artifacts).toHaveLength(0)
+    expect(manifest.status).toBe('verified')
+    expect(manifest.artifacts).toHaveLength(2)
   })
 
   it('rejects a release when the Agent runtime fixture is only partially verified', async () => {

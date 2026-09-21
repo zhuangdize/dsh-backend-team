@@ -27,6 +27,13 @@ attestation 的签名。因此脚本通过不能独立证明生产验收或供�
 GitHub 的手动发布检查同样要求 `evidence_path` 输入，指向所检出 revision 中已审核
 的证据文件；工作流通过环境变量传入路径，不把输入直接拼进脚本。
 
+`.github/workflows/release-bundle.yml` 现在按同一归档执行完整的候选发布顺序：先在干净
+checkout 中构建未签名 Bundle，再用 GitHub Actions artifact attestations 对该归档签名，
+将签名摘要和最终 Release 下载地址回写到 `.materials.json`，随后运行
+`verify-release.mjs`、`audit-release-materials.mjs`，最后把归档、checksum、SBOM、材料清单、
+attestation 和审计报告一起发布到 GitHub Release。手动运行必须同时提供 `evidence_path`
+和 `release_tag`；任一 gate、摘要绑定、签名或稳定 HTTPS 地址失败，工作流会在发布前停止。
+
 ```sh
 .backend-team/runtime/nvm/versions/node/v24.19.0/bin/node scripts/build-release.mjs --channel release-candidate --evidence artifacts/release-evidence.json
 .backend-team/runtime/nvm/versions/node/v24.19.0/bin/node scripts/verify-release.mjs --tarball dist/dsh-backend-team-bundle-<version>.tgz --evidence artifacts/release-evidence.json
