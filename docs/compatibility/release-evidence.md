@@ -843,7 +843,7 @@ signed distribution are supplied.
 ### 2026-09-21 — T21 Bundle release workflow hardening
 
 The Bundle release workflow now performs the release-candidate supply-chain steps
-against one immutable archive: clean checkout and full checks, unsigned pack,
+against one immutable archive: clean checkout, workspace build and full checks, unsigned pack,
 GitHub Actions artifact attestation, digest-bound distribution metadata, release
 verification, material audit, and publication of the archive plus checksum, SBOM,
 materials, attestation, and audit report. `build-release.mjs` also supports
