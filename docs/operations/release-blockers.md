@@ -1,6 +1,6 @@
 # 发布阻塞处置方案
 
-更新日期：2026-09-20。
+更新日期：2026-09-21。
 
 这里的 `blocked` 不是同一种失败。当前工作区已经通过本地代码、类型、构建、Bundle、Qwen 局部调用和 arm64/x64 本机 PostgreSQL smoke；剩余状态分别属于真实生产验收证据和正式发布供应链证据。不能用本机结果直接替换这两类证据。
 
@@ -16,8 +16,8 @@
 
 ## 正确执行顺序
 
-1. 配置仓库 Git remote，并允许 GitHub Actions 使用 macOS arm64/x64 runner、OIDC attestation 和 release 写入权限。
-2. 手动触发 `.github/workflows/postgresql-runtime.yml`。两个架构都必须通过架构核对、PostgreSQL 生命周期和 attestation；任何一个失败都停止。
+1. ~~配置仓库 Git remote，并允许 GitHub Actions 使用 macOS arm64/x64 runner、OIDC attestation 和 release 写入权限。~~ 已完成：公开仓库已配置 remote，工作流已声明双架构、OIDC attestation 和 artifact 权限。
+2. ~~手动触发 `.github/workflows/postgresql-runtime.yml`。两个架构都必须通过架构核对、PostgreSQL 生命周期和 attestation；任何一个失败都停止。~~ 已完成：Run `35558685646` 两个 job 均通过，arm64 attestation `48835525`，x64 attestation `48835943`。
 3. 下载同一次 workflow run 的两个归档、`SHA256SUMS`、`smoke.json`、`attestation.json`，使用 `gh attestation verify` 核对归属和摘要。Actions 临时 artifact URL 不能直接写入 manifest。
 4. 将两个归档和证明发布到稳定 HTTPS release URL，生成包含两个架构、字节数、SHA-256、下载 URL 和证明引用的 verified runtime manifest。manifest 只有在这些字段都能从发布页面复核时才能从 `pending-native-build` 改为 `verified`。
 5. 在同一 revision 上准备完整 `release-evidence.json`，其中 `production-coordinator`、`browser-codex-chrome`、`real-model-api`、`dbgate-gui` 必须引用真实材料；隔离 fixture 不能代替这些 gate。
@@ -32,4 +32,4 @@
 
 ## 当前无法由本机代办的部分
 
-本工作区没有 Git remote、GitHub CLI 登录、签名服务凭据或稳定 HTTPS 发布地址。因此不能从这里伪造 attestation、把本机产物写成正式 provenance，或代替用户发布 release。缺少这些外部输入时，发布门禁保持失败是预期行为，不是隐藏的代码错误。
+当前工作区已有 Git remote，GitHub Actions 双架构构建和 attestation 已完成；但本机没有可用于 `gh attestation verify` 的 GitHub CLI 登录会话，也没有把同一 run 的归档发布到稳定 HTTPS release URL。因此不能把 Actions 临时 artifact 直接写入 manifest，仍需下载并核对两个归档后创建正式 release/distribution 记录。缺少这些外部输入时，发布门禁保持失败是预期行为，不是隐藏的代码错误。
