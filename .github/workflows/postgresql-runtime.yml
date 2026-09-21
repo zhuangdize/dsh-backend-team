@@ -42,7 +42,9 @@ jobs:
           cache: npm
       - name: Verify native runner identity
         run: node -e 'if (process.platform !== "darwin" || process.arch !== process.env.EXPECTED_ARCHITECTURE) process.exit(1)'
-      - run: npm ci --ignore-scripts
+      # DSH rc.6 peer packages are supplied by the verified host Profile.
+      # Do not let npm auto-resolve a newer rc.8 peer tree in CI.
+      - run: npm ci --ignore-scripts --legacy-peer-deps
       - run: npm run build
       - run: bash scripts/build-postgresql-runtime.sh
       - name: Verify native database lifecycle and preserve evidence

@@ -56,6 +56,7 @@ T01 已完成诊断与防误报修复；未启动新的业务开发或审批。�
   - 工作区被占用时，新需求以 `queuedAt` 写入会话任务注册表，去重同会话同需求；排队期间不创建任务状态、审批或 Agent。旧任务由聊天明确搁置后，同一会话最早的排队任务才自动衔接；若衔接过程在写注册表前失败，仍保留排队记录。
   - 隔离测试覆盖明确搁置、队列持久化、重启恢复、排队阶段不创建状态目录、旧任务记录保留及排队任务独立状态；聊天工具和任务中心分别报告并展示“排队中”。
   - 验证：10 个相关测试文件 90 项通过；Bundle、Web 与 spec-workflow 类型检查、相关 ESLint、`git diff --check` 通过；Bundle 构建、打包和本地 web profile 升级通过。真实 Chrome `http://127.0.0.1:3080/` 已复核“旧任务占用→新需求持久排队→用户确认搁置旧任务→排队任务自动衔接”的链路；升级修复后的运行时继续执行该任务后，设计校验通过并进入 `AWAIT_DESIGN_APPROVAL`，页面显示“查看并确认”。
+  - 2026-09-20 真实 Qwen/Chrome 回归修复：发现候选列表把已搁置的 greeting 任务排在仍占用工作区的客户管理 BUILD 任务前，且重复搁置已搁置任务会因旧 revision 报 `STALE_VIEW`。`packages/bundle/src/conversation-task-host.ts` 现在优先展示未搁置任务，并将明确的重复搁置处理为幂等操作；`packages/bundle/test/conversation-task-host.test.ts` 增加旧 revision 重复搁置回归。Node24 下相关 2 个测试文件 30/30 通过，Bundle 类型检查、全量构建、Profile 升级通过；重启 `web` Profile 后，真实 Chrome 新会话已看到“客户管理 BUILD · 未完成”排在“greeting VERIFY · 已搁置”前。当前停在用户任务选择确认框，未代用户选择或批准。
   - 仍未完成：当前实施方案审批由用户本人操作，未代用户确认；确认后进入 T03 的真实需求变更与重新交付验收。
 - [x] **T03 ☑️ 需求变更到重新交付｜真实宿主验证通过并进入 DELIVER｜R03/R04/R14**
   - 已实现变更选择、安全暂停、旧证据保存、两道审批重开、检查点归档及恢复。
@@ -232,6 +233,7 @@ T01 已完成诊断与防误报修复；未启动新的业务开发或审批。�
   - DbGate 现状复核：安装器固定 `http@0.0.1-security`，并改为 PostgreSQL-only 运行时，只安装 `dbgate-api`、`dbgate-web` 和 `dbgate-plugin-postgres`；`dbgate-serve`、`dbgate-plugin-excel` 与 `xlsx` 从当前 runtime lock 和插件目录移除，启动器也会拒绝它们重新出现。官方 registry 安全审计为 0 critical/0 high/8 moderate，当前 profile 不再包含 `xlsx`。PostgreSQL 双架构本机制品已生成并有执行证据，但 manifest 仍为 `pending-native-build`；本地材料为 `not-attested`、无稳定 HTTPS 下载地址，正式发布继续 fail closed。
   - 验证：DbGate 安装器、DbGate 安全、release artifact、release content policy 与 dependency governance 共 5 个测试文件、44/44 通过；其中发布材料相关 3 个测试文件为 31/31。Bundle 构建、脚本审计、本机制品 checksum/SBOM/materials 复核通过；工作区 Node 24 下 PostgreSQL-only 启动器实际返回 DbGate 7.2.3 页面，runtime 中未发现 `xlsx`。正式发布仍需把双架构归档接入带签名的稳定 HTTPS 分发并完成 manifest 验证，T21 保持未勾选。
   - 2026-09-20 源码公开推送：完成公开前安全审计，以无旧提交历史的首个提交 `61da6e496031369062848090c497391f842c9394` 推送到 `https://github.com/zhuangdize/dsh-backend-team` 的 `main`；排除本地 `.backend-team`/`.superpowers`、依赖与构建目录、发布压缩包及旧历史中的内网地址。该动作只完成源码公开，T21 的正式制品 provenance、签名/attestation 和稳定 HTTPS 下载门禁仍未完成。
+  - 2026-09-21 GitHub Actions 首次复验发现两架构都在 `npm ci` 阶段失败：npm 自动选择了 `@deepseek-ai/dsh-client-locale@0.1.0-rc.8`，与 Bundle/宿主要求的 DSH rc.6 peer 树冲突。已在 PostgreSQL runtime 和 release workflow 固定 `npm ci --ignore-scripts --legacy-peer-deps`，并用干净源码归档、Node 24.19.0 复现安装和完整 workspace build 通过；下一步重新运行 Actions，T21 仍需外部 attestation、稳定 HTTPS 制品和 verified manifest。
 - [ ] **T22 ☐ 干净 Profile 生命周期验收｜待完整验收｜R18**
   - 新增 `scripts/profile-lifecycle-smoke.mjs`，只在临时 `DSH_HOME`、临时 Profile、临时工作区和临时 pnpm store 中调用官方 rc.6 DSH 命令；脚本强制工作区 Node 24.19.0，完成后清理临时目录并保留脱敏结果。
   - arm64 实际验收已通过：安装 0.1.0 后 dump-config 确认唯一 `backend-team` 行；再次读取诊断配置作为使用检查；用重打包的 0.1.1 包升级且行数保持 1；官方 remove 后重新安装 0.1.0 完成回滚恢复；再次 remove 完成卸载；`specs/keep.md` 与 `.backend-team/state.json` 前后 SHA-256 一致。证据 `.backend-team/artifacts/profile-lifecycle-t22-EBa4rL/result.json`。

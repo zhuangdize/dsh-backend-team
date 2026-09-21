@@ -17,7 +17,9 @@ jobs:
         with:
           node-version: '24.19.0'
           cache: npm
-      - run: npm ci --ignore-scripts
+      # DSH rc.6 peer packages are supplied by the verified host Profile.
+      # Do not let npm auto-resolve a newer rc.8 peer tree in CI.
+      - run: npm ci --ignore-scripts --legacy-peer-deps
       - run: npm test -- --run
       - run: npm run typecheck
       - run: npm run lint -- --quiet
