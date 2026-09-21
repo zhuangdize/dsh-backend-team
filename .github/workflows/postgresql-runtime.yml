@@ -1,6 +1,12 @@
 name: PostgreSQL runtime
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Public GitHub Release tag to publish the verified runtime (leave empty for verification only)
+        required: false
+        default: ''
+        type: string
   push:
     paths:
       - 'runtime-manifests/postgresql-source-18.6.json'
@@ -73,3 +79,97 @@ jobs:
           path: ${{ runner.temp }}/postgresql-evidence/
           if-no-files-found: error
           retention-days: 30
+
+  publish-runtime:
+    if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    env:
+      RELEASE_TAG: ${{ inputs.release_tag }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: postgresql-18.6-darwin-*
+          path: release-input
+      - name: Prepare stable release assets and verified manifest
+        env:
+          REPOSITORY: ${{ github.repository }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          case "$RELEASE_TAG" in
+            v[0-9]*) ;;
+            *) echo 'release_tag must start with v and a numeric version' >&2; exit 1 ;;
+          esac
+          mkdir -p release-assets
+          for architecture in arm64 x64; do
+            source_dir="release-input/postgresql-18.6-darwin-${architecture}"
+            archive="postgresql-18.6-darwin-${architecture}.tar.xz"
+            test -f "$source_dir/$archive"
+            cp "$source_dir/$archive" "release-assets/$archive"
+            cp "$source_dir/smoke.json" "release-assets/postgresql-18.6-darwin-${architecture}.smoke.json"
+            cp "$source_dir/attestation.json" "release-assets/postgresql-18.6-darwin-${architecture}.attestation.json"
+            if [ "$architecture" = arm64 ]; then
+              cp "$source_dir/postgresql-source-18.6.json" release-assets/postgresql-source-18.6.json
+            else
+              cmp "$source_dir/postgresql-source-18.6.json" release-assets/postgresql-source-18.6.json
+            fi
+          done
+          node --input-type=module <<'NODE'
+          import { createHash } from 'node:crypto'
+          import { readFile, stat, writeFile } from 'node:fs/promises'
+
+          const repository = process.env.REPOSITORY
+          const tag = process.env.RELEASE_TAG
+          const base = `https://github.com/${repository}/releases/download/${tag}`
+          const artifacts = []
+          for (const architecture of ['arm64', 'x64']) {
+            const filename = `postgresql-18.6-darwin-${architecture}.tar.xz`
+            const path = `release-assets/${filename}`
+            const bytes = (await stat(path)).size
+            const sha256 = createHash('sha256').update(await readFile(path)).digest('hex')
+            artifacts.push({
+              architecture: `darwin-${architecture}`,
+              version: '18.6',
+              url: `${base}/${filename}`,
+              bytes,
+              sha256,
+              attestation: `${base}/postgresql-18.6-darwin-${architecture}.attestation.json`,
+            })
+          }
+          await writeFile('release-assets/postgresql-18.6-darwin.json', `${JSON.stringify({
+            schemaVersion: 1,
+            component: 'postgresql',
+            version: '18.6',
+            status: 'verified',
+            sourceManifest: 'postgresql-source-18.6.json',
+            buildCommit: process.env.COMMIT_SHA,
+            artifacts,
+          }, null, 2)}\n`)
+          NODE
+          sha256sum release-assets/*.tar.xz release-assets/*.json > release-assets/SHA256SUMS
+
+      - name: Publish GitHub Release with stable HTTPS assets
+        run: |
+          gh release create "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "PostgreSQL runtime 18.6 $RELEASE_TAG" \
+            --notes "Verified PostgreSQL 18.6 native runtime artifacts for macOS arm64 and x64. Built by GitHub Actions with signed attestation." \
+            release-assets/*
+
+      - name: Commit verified runtime manifest
+        run: |
+          set -euo pipefail
+          path='runtime-manifests/postgresql-18.6-darwin.json'
+          current_sha=$(gh api "repos/$GITHUB_REPOSITORY/contents/$path?ref=$GITHUB_REF_NAME" --jq .sha)
+          content=$(base64 -w0 release-assets/postgresql-18.6-darwin.json)
+          gh api --method PUT "repos/$GITHUB_REPOSITORY/contents/$path" \
+            -f message='release: verify PostgreSQL runtime 18.6 [skip ci]' \
+            -f branch="$GITHUB_REF_NAME" \
+            -f sha="$current_sha" \
+            -f content="$content" >/dev/null
