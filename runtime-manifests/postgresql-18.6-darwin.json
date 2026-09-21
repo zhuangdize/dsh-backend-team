@@ -2,7 +2,25 @@
   "schemaVersion": 1,
   "component": "postgresql",
   "version": "18.6",
-  "status": "pending-native-build",
+  "status": "verified",
   "sourceManifest": "postgresql-source-18.6.json",
-  "artifacts": []
+  "buildCommit": "800d27b06aab8131c43ada77c332e90a3e03822e",
+  "artifacts": [
+    {
+      "architecture": "darwin-arm64",
+      "version": "18.6",
+      "url": "https://github.com/zhuangdize/dsh-backend-team/releases/download/v0.1.0-rc.1/postgresql-18.6-darwin-arm64.tar.xz",
+      "bytes": 5631164,
+      "sha256": "43023496c1e4e256a84525723cc484dd1f4490d9c084affd056e38b95d814190",
+      "attestation": "https://github.com/zhuangdize/dsh-backend-team/releases/download/v0.1.0-rc.1/postgresql-18.6-darwin-arm64.attestation.json"
+    },
+    {
+      "architecture": "darwin-x64",
+      "version": "18.6",
+      "url": "https://github.com/zhuangdize/dsh-backend-team/releases/download/v0.1.0-rc.1/postgresql-18.6-darwin-x64.tar.xz",
+      "bytes": 6123796,
+      "sha256": "bfaed6046c1fe65931307ad2bea22d2df076c8af38e61fab5c17f4e8a0f7c40c",
+      "attestation": "https://github.com/zhuangdize/dsh-backend-team/releases/download/v0.1.0-rc.1/postgresql-18.6-darwin-x64.attestation.json"
+    }
+  ]
 }
