@@ -32,7 +32,7 @@ checkout 中构建未签名 Bundle，再用 GitHub Actions artifact attestations
 将签名摘要和最终 Release 下载地址回写到 `.materials.json`，随后运行
 `verify-release.mjs`、`audit-release-materials.mjs`，最后把归档、checksum、SBOM、材料清单、
 attestation 和审计报告一起发布到 GitHub Release。手动运行必须同时提供 `evidence_path`
-和 `release_tag`；任一 gate、摘要绑定、签名或稳定 HTTPS 地址失败，工作流会在发布前停止。
+、`release_tag` 和已审核的 `agent_fixture_path`；任一 gate、摘要绑定、签名或稳定 HTTPS 地址失败，工作流会在发布前停止。工作流不会隐式接受仓库内的 partial fixture。
 
 ```sh
 .backend-team/runtime/nvm/versions/node/v24.19.0/bin/node scripts/build-release.mjs --channel release-candidate --evidence artifacts/release-evidence.json

@@ -848,8 +848,10 @@ GitHub Actions artifact attestation, digest-bound distribution metadata, release
 verification, material audit, and publication of the archive plus checksum, SBOM,
 materials, attestation, and audit report. `build-release.mjs` also supports
 finalizing an existing tarball after attestation and creates `dist/` in a clean
-checkout. This removes the workflow plumbing gap; it does not promote a release
-until the four required production evidence gates are supplied and independently
+checkout. The workflow now requires an explicit reviewed `verified` Agent fixture
+path instead of silently using the repository's partial fixture. This removes the
+workflow plumbing gap; it does not promote a release until the four required
+production evidence gates and the verified fixture are supplied and independently
 reviewed.
 
 ### 2026-09-15 — T21 local dual-architecture PostgreSQL build

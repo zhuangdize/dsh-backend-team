@@ -10,6 +10,10 @@ on:
         description: Public GitHub Release tag, for example v0.1.0-rc.2
         required: true
         type: string
+      agent_fixture_path:
+        description: Repository path to the reviewed verified Agent runtime fixture
+        required: true
+        type: string
 permissions:
   contents: write
   id-token: write
@@ -20,6 +24,7 @@ jobs:
     env:
       RELEASE_EVIDENCE: ${{ inputs.evidence_path }}
       RELEASE_TAG: ${{ inputs.release_tag }}
+      RELEASE_AGENT_FIXTURE: ${{ inputs.agent_fixture_path }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,7 +46,7 @@ jobs:
             v[0-9]*) ;;
             *) echo 'release_tag must start with v and a numeric version' >&2; exit 1 ;;
           esac
-          node scripts/build-release.mjs --channel local-development --evidence "$RELEASE_EVIDENCE"
+          node scripts/build-release.mjs --channel local-development --evidence "$RELEASE_EVIDENCE" --agent-fixture "$RELEASE_AGENT_FIXTURE"
           tarball=$(find dist -maxdepth 1 -type f -name '*.tgz' -print -quit)
           test -n "$tarball"
           echo "tarball=$tarball" >> "$GITHUB_OUTPUT"
@@ -84,8 +89,8 @@ jobs:
           TARBALL: ${{ steps.bundle.outputs.tarball }}
         run: |
           set -euo pipefail
-          node scripts/build-release.mjs --channel release-candidate --evidence "$RELEASE_EVIDENCE" --tarball "$TARBALL" --distribution dist/release-distribution.json
-          node scripts/verify-release.mjs --channel release-candidate --tarball "$TARBALL" --evidence "$RELEASE_EVIDENCE"
+          node scripts/build-release.mjs --channel release-candidate --evidence "$RELEASE_EVIDENCE" --agent-fixture "$RELEASE_AGENT_FIXTURE" --tarball "$TARBALL" --distribution dist/release-distribution.json
+          node scripts/verify-release.mjs --channel release-candidate --tarball "$TARBALL" --evidence "$RELEASE_EVIDENCE" --agent-fixture "$RELEASE_AGENT_FIXTURE"
           node scripts/audit-release-materials.mjs --tarball "$TARBALL" --output dist/release-audit.json
       - name: Publish signed Bundle release
         env:
