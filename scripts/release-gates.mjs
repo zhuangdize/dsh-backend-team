@@ -39,12 +39,12 @@ export function assertReleaseEvidence(evidence) {
   }
   for (const gateId of REQUIRED_RELEASE_EVIDENCE) {
     const gate = evidence.gates[gateId]
-    if (!isRecord(gate) || gate.status !== 'passed' || typeof gate.evidenceRef !== 'string' || gate.evidenceRef.length === 0) {
+    if (!isRecord(gate) || gate.status !== 'passed' || !isConcreteEvidenceRef(gate.evidenceRef)) {
       throw releaseError('INCOMPLETE_RELEASE_EVIDENCE', `required release gate ${gateId} is not explicitly passed with evidence`)
     }
   }
   const model = evidence.gates['real-model-api']
-  if (typeof model.provider !== 'string' || model.provider.trim().length === 0 || typeof model.model !== 'string' || model.model.trim().length === 0 || !['openai-responses', 'openai-chat-completions'].includes(model.api)) {
+  if (typeof model.provider !== 'string' || model.provider.trim().length === 0 || typeof model.model !== 'string' || model.model.trim().length === 0 || model.provider.trim().toLowerCase() === 'test' || model.model.trim().toLowerCase() === 'test' || !['openai-responses', 'openai-chat-completions'].includes(model.api)) {
     throw releaseError('INCOMPLETE_RELEASE_EVIDENCE', 'model API evidence requires provider, model and a supported API protocol')
   }
 }
@@ -57,6 +57,12 @@ export function releaseError(code, message) {
 
 function isRecord(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isConcreteEvidenceRef(value) {
+  if (typeof value !== 'string' || value.trim().length === 0) return false
+  const ref = value.trim().toLowerCase()
+  return !ref.startsWith('test://') && !ref.includes('example.test') && !ref.includes('placeholder')
 }
 
 function isHttpsUrl(value) {

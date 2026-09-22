@@ -109,6 +109,37 @@ describe('release artifact policy', () => {
     }
   })
 
+  it('rejects placeholder evidence refs and test model metadata', async () => {
+    const root = await mkdtemp(join(tmpdir(), 'dsh-release-placeholder-evidence-'))
+    try {
+      const tarball = join(root, 'bundle.tgz')
+      const digest = 'f'.repeat(64)
+      const manifest = join(root, 'postgresql.json')
+      const fixture = join(root, 'agent-runtime.json')
+      const evidence = join(root, 'release-evidence.json')
+      await writeFile(tarball, 'bundle')
+      await writeFile(manifest, JSON.stringify(validManifest(digest)))
+      await writeFile(fixture, JSON.stringify(validAgentFixture()))
+      await writeFile(`${tarball}.sha256`, `${sha256('bundle')}  bundle.tgz\n`)
+
+      const placeholder = validEvidence()
+      placeholder.gates['browser-codex-chrome'] = { status: 'passed', evidenceRef: 'test://browser' }
+      await writeFile(evidence, JSON.stringify(placeholder))
+      const placeholderResult = await run(process.execPath, [resolve(import.meta.dirname, '../../scripts/verify-release.mjs'), '--tarball', tarball, '--manifest', manifest, '--agent-fixture', fixture, '--evidence', evidence])
+      expect(placeholderResult.code).not.toBe(0)
+      expect(`${placeholderResult.stdout}\n${placeholderResult.stderr}`).toContain('INCOMPLETE_RELEASE_EVIDENCE')
+
+      const testModel = validEvidence()
+      testModel.gates['real-model-api'] = { status: 'passed', evidenceRef: 'artifacts/model/run-1.json', provider: 'test', model: 'test', api: 'openai-responses' }
+      await writeFile(evidence, JSON.stringify(testModel))
+      const testModelResult = await run(process.execPath, [resolve(import.meta.dirname, '../../scripts/verify-release.mjs'), '--tarball', tarball, '--manifest', manifest, '--agent-fixture', fixture, '--evidence', evidence])
+      expect(testModelResult.code).not.toBe(0)
+      expect(`${testModelResult.stdout}\n${testModelResult.stderr}`).toContain('INCOMPLETE_RELEASE_EVIDENCE')
+    } finally {
+      await rm(root, { recursive: true, force: true })
+    }
+  })
+
   it('binds a local archive to its SBOM, lockfile and license materials', async () => {
     const root = resolve(import.meta.dirname, '../..')
     const temporary = await mkdtemp(join(tmpdir(), 'dsh-release-materials-'))
