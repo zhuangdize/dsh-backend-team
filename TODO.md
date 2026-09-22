@@ -1,6 +1,6 @@
 # Backend Agent Team 待办清单
 
-更新日期：2026-09-20。此文件是后续开发、验收和进度汇报的唯一状态入口。
+更新日期：2026-09-22。此文件是后续开发、验收和进度汇报的唯一状态入口。
 
 依据：[原需求核查](docs/requirements-audit-2026-09-09.md)、用户后续要求及 Stage 06/07 发布事项。首次整理沿用已有实现与验证记录，没有重新验收全部功能。
 
@@ -174,7 +174,7 @@ T01 已完成诊断与防误报修复；未启动新的业务开发或审批。�
   - 本轮修复资源面板打开任务时未同步当前 `taskId` 的问题：面板现在在资源响应返回后保留任务上下文，备份和恢复按钮不会因空任务标识静默 no-op；备份完成和恢复完成均显示可读的绿色结果状态。
   - 本轮隔离真实 Chrome 宿主验收：在临时 Profile/工作区的资源面板中通过“立即备份”创建 `20260914T130653Z-postgres-95fe05fc`，页面显示“数据库备份已完成，可在下方查看校验摘要。”并列出 3 份备份；随后准备空库 `restored_gui2`，通过“恢复到新库 → 确认恢复”完成恢复，页面显示“数据库已恢复到新库：restored_gui2”，独立查询回读 `1|t15-ui`。证据 `.backend-team/artifacts/database-snapshot-resource-chrome-t15-20260914.json`，截图由 Codex Chrome CUA 直接检查。
   - 完成标准：Agent 提供实际操作和必要确认，用户可查看备份/恢复结果；数据恢复有真实证据。隔离真实资源面板的备份/恢复和结果展示证据已具备；正式客户任务和生产数据库仍未操作，T15 继续保持未勾选。
-- [ ] **T16 ☐ PostgreSQL arm64 发布制品｜发布证据待核实｜R18**
+- [x] **T16 ☑️ PostgreSQL 双架构 runtime 发布制品｜外部 Release 与 attestation 已验证｜R18**
   - 本机运行已验证；核查原生制品、manifest、正式下载地址和签名，不沿用旧截图的 pending 状态推断现状。
   - 2026-09-14 逐项复验：本机 arm64 archive `.backend-team/artifacts/postgresql-18.6-darwin-arm64.tar.xz` SHA-256 为 `2c91690995dab19f4193b60297a4070f9c28df96bcf2711a49dcc48d6bae4ec0`；直接运行 PostgreSQL 18.6 arm64 生命周期、SCRAM/loopback、建库建表读写、停止及新实例恢复均通过，证据 `.backend-team/artifacts/postgresql-execution-t16-20260914.json`。发布 manifest 仍如实为 `pending-native-build`，`verify-postgresql-runtime.mjs` 以 Node24 明确拒绝未验证 manifest；当前缺 x64 制品、正式 HTTPS 下载地址及签名/attestation，未把本机结果升级为发布证据。
   - 2026-09-15 最新只读审计（构建前快照）：运行 `verify-postgresql-execution-port.mjs` 时，Node 24.19.0 / macOS arm64 生命周期、SQL 读写、停止和新集群恢复通过；当时包为 5,709,156 字节，结果 `.backend-team/artifacts/postgresql-execution-t16-20260915.json`。`verify-postgresql-runtime.mjs` 以退出码 1 拒绝 `pending-native-build`；该快照尚无 darwin-x64 包、manifest artifact、稳定 HTTPS 地址、checksum sidecar 或签名/attestation，审计 `.backend-team/artifacts/postgresql-release-t16-20260915.json`。后续双架构本机构建见下条，未将本机结果升级为发布通过。
@@ -182,6 +182,7 @@ T01 已完成诊断与防误报修复；未启动新的业务开发或审批。�
   - 本机双架构和执行证据已具备，但没有将 `runtime-manifests/postgresql-18.6-darwin.json` 擅自改成 `verified`：正式门禁还要求外部可下载 HTTPS 地址、checksum sidecar 及签名/attestation。`verify-postgresql-runtime.mjs` 继续按此规则 fail closed。
   - 2026-09-17 官方来源复核：PostgreSQL 18.6 已于 2026-08-13 发布；官方 FTP 当前提供源码归档及 checksum，未提供可直接用于本项目的 darwin-arm64/darwin-x64 运行时归档和签名材料。因此源码 URL 不能替代本机制品 provenance，仍需外部构建与分发服务补齐。
   - 2026-09-21 外部发布验收：GitHub Actions Run `35565633720` 使用 `800d27b06aab8131c43ada77c332e90a3e03822e` 重建并 attested 双架构 runtime，公开发布为 [v0.1.0-rc.1](https://github.com/zhuangdize/dsh-backend-team/releases/tag/v0.1.0-rc.1)。arm64 归档 SHA-256 `43023496c1e4e256a84525723cc484dd1f4490d9c084affd056e38b95d814190`、x64 归档 SHA-256 `bfaed6046c1fe65931307ad2bea22d2df076c8af38e61fab5c17f4e8a0f7c40c`，manifest 已回写为 `status=verified`；两份公开 attestation 的 subject 摘要与上述归档一致。T16 的外部发布证据已补齐，干净消费者安装仍由 D01/T22 另行验收。
+  - 2026-09-22 状态同步：T16 的完成标准已由上述公开 Release、双架构校验摘要、manifest `status=verified` 和 attestation 证据满足；干净消费者安装仍归入 T22，Intel/x64 完整云端场景继续按 D01 延期。
   - 完成标准：安装包、摘要、签名和来源可验证；在干净环境可重复安装启动。Intel 部分见 D01。
 
 ## 四、界面与浏览器完整验收
