@@ -16,9 +16,10 @@
 
 发布脚本要求显式传入证据文件；证据文件必须在 `gates` 中把以下 gate 标记为 `passed`，并为每项提供非空 `evidenceRef`：`production-coordinator`、`browser-codex-chrome`、`real-model-api`、`dbgate-gui`。脚本不会替这些 gate 自动填充通过状态，也不会把 fixture 当作真实验收证据。真实模型验收只能通过受保护的 credential facility 注入凭据；凭据不得写入 manifest、证据文件、命令行日志或输出。
 
-当前校验只检查证据声明的结构，不读取或验证 `evidenceRef` 对应材料，也不验证
-attestation 的签名。因此脚本通过不能独立证明生产验收或供应链可信性；发布系统仍需
-核对证据与待发布 revision/artifact 的对应关系。2026-09-05 的 DbGate 基础 GUI
+当前校验不会读取或验证 `evidenceRef` 对应材料，也不会替人工确认
+attestation 的签名、证据与待发布 revision/artifact 的对应关系；这些绑定仍由人工审核和
+发布流水线负责。为避免把测试夹具误当成生产证据，门禁会拒绝 `test://`、`example.test`、
+`placeholder` 等明显占位引用，以及 `provider/model=test` 的模型元数据。2026-09-05 的 DbGate 基础 GUI
 验收已完成，精确依赖替换后仍有 21 项 npm findings（0 critical、3 high、18 moderate），不得把
 这次基础验收填写成完整生产 GUI/security gate 通过。
 
