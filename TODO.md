@@ -63,15 +63,15 @@ T01 已完成诊断与防误报修复；未启动新的业务开发或审批。�
   - 本轮修复了 `STALE_VIEW` 阻塞：控制面以前只读事件投影 revision，投影落后持久化状态时会错误拒绝继续；现在正式 Bundle 从 durable state store 读取权威 revision，并在关闭时等待正在执行的控制调用排空。
   - 真实宿主已从 VERIFY 恢复至 DELIVER（revision 27）；最终报告 `.backend-team/final-verification-cqAQHW/report.json` 为 `passed`，交付状态为 `ready`，AC-001–AC-011 全部通过且无 unresolved items。Chrome 中已打开团队进度和任务资源，显示功能开发、测试验收已结束，并可查看验收方案及证据绑定。
   - 完成标准已满足：真实宿主完成需求变更后的恢复、测试和交付状态切换；取消、中断、过期回答的隔离回归保留在既有控制/审批测试中；旧任务和基线未被覆盖。DELIVER 阶段当前只提供只读验收结果，没有额外的“交付审批”写操作。真实业务迁移仍未执行，归入 T13/T14。
-- [ ] **T04 ☐ 审批来源与记录展示｜部分实现、待核实｜R05/R15**
+- [x] **T04 ☑️ 审批来源与记录展示｜真实 Chrome 来源记录已通过｜R05/R15**
   - 核查旧任务 09:56 设计审批来源；09:19 需求审批已有对应会话证据。
   - 本轮代码推进：新审批记录增加认证会话、任务 ID和审批时的文档哈希；资源面板展示来源与文档版本摘要；缺少来源的旧记录明确显示“来源未知”，不补造历史信息。
   - 本轮补充回归：审批服务持久化 `sessionId`/`taskId` 与文档哈希；生产控制命令在存在任务上下文时写入任务 ID；相关审批服务、生产命令、视图模型及面板模型 33 项通过。
   - 本轮验收：升级本地 `web` Profile 并重启 DSH 后，真实 Chrome 聊天出现“需求确认 1 / 3”逐题确认卡，Q1–Q3、选项、可选补充说明和“下一题”均可见；卡片明确说明回答不会自动批准方案，未代用户答题或批准。资源面板仍可查看需求与审批记录，历史记录继续显示来源未知及文档哈希摘要。
   - 本轮代码修复：`BackendTeamViewProjector` 收到新的 `approval-recorded` 事件时，现在将该记录投影到 `approvalHistory`，按审批类型替换旧版本，保留认证会话、任务 ID和文档哈希；此前实时事件只清除待审批卡，可能导致资源/进度视图缺少刚完成的审批记录。
   - 本轮隔离验证：Web 事件投影、面板、进度和待审批回归共 20 项通过；Web 类型检查、受影响 ESLint 与 `git diff --check` 通过。未修改客户样例代码，未执行真实审批或迁移。
-  - 仍未完成：Q1–Q3 已完成回答，但需求方案仍等待用户本人批准；设计审批及新记录的会话、任务、文档来源最终展示需在批准后再验收。
   - 完成标准：新的批准可追溯到用户操作、会话、任务和文档版本；旧来源无法核实则明确标注未知；资源区正确展示，不补造历史批准。
+  - 2026-09-22 真实 Chrome 复验：在 `http://127.0.0.1:3080/` 的任务中心接回客户管理任务并打开资源面板，需求和设计审批记录均显示“来源已记录”，包含同一 `sessionId`、任务 ID和文档摘要；未触发执行或迁移写入。证据保存在本机 `.backend-team/artifacts/t04-source-chrome-evidence-20260922.json`。本次任务范围未发生新变更，历史审批与当前范围一致，T04 完成。
 - [ ] **T05 ☐ 环境预检与可执行恢复｜部分实现｜R12/R14**
   - 已有路径预检、限次规划修正和基线检查；补依赖、环境检查及适用的恢复动作。
   - 本轮代码推进：`backend-team-doctor` 增加项目 manifest/lockfile/node_modules、Node 版本与架构、预算账本、开发检查点、Spec Kit 运行时、状态 revision/审批/运行数量，并给出受状态约束的 `preview-and-confirm`、`continue`、`none` 或 `inspect-state` 建议；发现预算账本存在耗尽记录时，BUILD/VERIFY 不再建议直接 `continue`，改为先核对耗尽维度；仍只读，不自动启动、安装、批准或改写状态。
@@ -400,3 +400,4 @@ T01 已完成诊断与防误报修复；未启动新的业务开发或审批。�
 - 2026-09-22（T21 发布门禁防误报）：发现 `assertReleaseEvidence` 只检查 evidenceRef 非空，可能接受 `test://`、`example.test` 或 `provider/model=test` 的占位材料。现已在 `scripts/release-gates.mjs` fail closed 拒绝这些占位值，并新增发布回归覆盖；Node 24 下 `tests/integration/release-artifact.test.ts` 11/11 通过，ESLint 和 `git diff --check` 通过。GitHub 的 Backend Team release 工作流当前仍为 0 次运行，未使用占位 evidence 触发发布；T21 继续等待真实 production coordinator、Chrome、模型和 DbGate evidence，以及 verified Agent fixture。
 - 2026-09-22（T05 状态复核）：Node 24 只读运行 `backend-team-doctor`，报告当前没有选中的未完成会话任务，workspace-root 只剩 legacy `VERIFY` 状态；客户管理任务记录为 `BUILD / shelved`，预算账本为 `blocked`，共 62 条记录、18 条耗尽记录，耗尽维度为 `tokens` 和 `wallMs`。恢复建议为 `inspect-state`，明确不能直接 `continue`。原始报告保存在本机 `.backend-team/artifacts/doctor-t05-status-20260922.json`；未重试模型、未改写任务归属、未批准或执行业务写入。T05 仍等待用户在任务中心明确接回/搁置后再做可审计恢复，T06 不提前启动。
 - 2026-09-22（T04 自动隔离验收）：按用户要求自动运行审批来源与展示回归，Node 24.19.0 下 `approval-service`、`control-mediated-approval-port`、Web `event-projector`、`pending-approval-projection`、`panel-model`、`task-review-card` 共 6 个文件、42/42 通过。证据保存在本机 `.backend-team/artifacts/t04-isolated-approval-auto-20260922.json`；真实业务审批仍未代用户执行，同一生产 Profile 在任务重新接回后的 Chrome 端到端验收仍待 T05 任务处置后补齐。
+- 2026-09-22（T04 真实来源记录验收）：用户授权代为处理后，在真实 DSH Chrome 任务中心接回客户管理任务并查看资源。需求审批（2026-09-14 09:13:35）和设计审批（2026-09-14 09:31:11）均展示“来源已记录”、同一会话 `session-a5716c6e-2732-4081-bafa-f1cade427438`、任务 `9dca7f07-d6da-4096-b41a-ecf4cbc51883` 及对应文档摘要；资源查看未触发执行或迁移。结合 6 个文件 42/42 的隔离回归，T04 完成。证据 `.backend-team/artifacts/t04-source-chrome-evidence-20260922.json`（本机）。
